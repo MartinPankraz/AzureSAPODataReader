@@ -25,6 +25,11 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+                    <ul class="nav navbar-nav navbar-right">  
+                        <li>@Html.ActionLink("Sign in", "SignIn", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+                        <li>|</li>
+                        <li>@Html.ActionLink("Sign out", "SignOut", "Account")</li>
+                    </ul>
                 </div>
             </div>
         </nav>

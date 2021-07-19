@@ -28,6 +28,11 @@
             <td>@d.SupplierName</td>  
             <td>@d.Price</td>  
             <td><img src="https://my-odata-apim.azure-api.net/public@(d.ImageUrl.Substring(27))" alt="product" style='width: 50px;'></td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id=d.Id }) |
+                @Html.ActionLink("Details", "Details", new { id=d.Id }) |
+                @Html.ActionLink("Delete", "Delete", new { id=d.Id })
+            </td>
         </tr>  
     }
 </table>

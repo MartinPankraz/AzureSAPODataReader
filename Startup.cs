@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Identity.Web;
 
 namespace AzureODataReader
 {
@@ -25,7 +26,7 @@ namespace AzureODataReader
         public void ConfigureServices(IServiceCollection services)
         {
             /*services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddMicrosoftIdentityWebApi(Configuration, "AzureAd");*/
+                .AddMicrosoftIdentityWebApp(Configuration, "AzureAd");*/
 
             services.AddControllersWithViews();
         }
@@ -49,7 +50,7 @@ namespace AzureODataReader
             app.UseRouting();
 
             //app.UseAuthentication();
-            app.UseAuthorization();
+            //app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
