@@ -1,0 +1,33 @@
+﻿@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+<table class="table table-bordered table-responsive table-hover">  
+    <tr>  
+        <th>Id</th>  
+        <th>Name</th>  
+        <th>Description</th>  
+        <th>SupplierId</th>  
+        <th>SupplierName</th>  
+        <th>Price</th>  
+        <th>ImageUrl</th>  
+    </tr>  
+    @foreach (var d in Model)  
+    {  
+        <tr>  
+            <td>@d.Id</td>  
+            <td>@d.Name</td>  
+            <td>@d.Description</td>  
+            <td>@d.SupplierId</td>  
+            <td>@d.SupplierName</td>  
+            <td>@d.Price</td>  
+            <td><img src="https://my-odata-apim.azure-api.net/public@(d.ImageUrl.Substring(27))" alt="product" style='width: 50px;'></td>
+        </tr>  
+    }
+</table>
