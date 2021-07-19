@@ -1,6 +1,6 @@
 using System;
 
-namespace AzureODataReader.Models
+namespace AzureSAPODataReader.Models
 {
     public class ErrorViewModel
     {
