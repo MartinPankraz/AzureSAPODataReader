@@ -10,22 +10,27 @@ using Microsoft.Extensions.Configuration;
 using Simple.OData.Client;
 using AzureODataReader.Models;
 using System.Net.Http;
+using Microsoft.Identity.Web;
 
 namespace AzureSAPODataReader.Controllers
 {
     [Authorize]
     public class HomeController : Controller
     {
-        public HomeController(IConfiguration configuration)
+        readonly ITokenAcquisition tokenAcquisition;
+        public HomeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition)
         {
             Configuration = configuration;
+            this.tokenAcquisition = tokenAcquisition;
         }
 
         public IConfiguration Configuration { get; }
         public async Task<IActionResult> Index()
         {
-            var accessToken = "";//HttpContext.GetTokenAsync("access_token").Result;
-            var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("Modules:AzureAPIM:BaseURL"), accessToken));
+            // Acquire the access token.
+            string[] scopes = new string[]{Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken")};
+            string accessToken = await tokenAcquisition.GetAccessTokenForUserAsync(scopes);
+            var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), accessToken));
 
             var products = await client
                 .For<ProductViewModel>("Products")
@@ -37,8 +42,10 @@ namespace AzureSAPODataReader.Controllers
 
         public async Task<IActionResult> Edit(string id)
         {
-            var accessToken = "";//HttpContext.GetTokenAsync("access_token").Result;
-            var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("Modules:AzureAPIM:BaseURL"), accessToken));
+            // Acquire the access token.
+            string[] scopes = new string[]{Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken")};
+            string accessToken = await tokenAcquisition.GetAccessTokenForUserAsync(scopes);
+            var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), accessToken));
             ProductViewModel product = await client
                 .For<ProductViewModel>("Products")
                 .Key(id)
@@ -58,8 +65,10 @@ namespace AzureSAPODataReader.Controllers
         {
             if (ModelState.IsValid)
             {
-                var accessToken = "";//HttpContext.GetTokenAsync("access_token").Result;
-                var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("Modules:AzureAPIM:BaseURL"), accessToken));
+                // Acquire the access token.
+                string[] scopes = new string[]{Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken")};
+                string accessToken = await tokenAcquisition.GetAccessTokenForUserAsync(scopes);
+                var client = new ODataClient(SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), accessToken));
                 ProductViewModel product = await client
                     .For<ProductViewModel>("Products")
                     .Key(model.Id)
@@ -103,10 +112,10 @@ namespace AzureSAPODataReader.Controllers
             oDataClientSettings.OnTrace = (x, y) => Console.WriteLine("TRACE---->" + string.Format(x, y));
             oDataClientSettings.BeforeRequest += delegate (HttpRequestMessage message)
             {
-                message.Headers.Add("Authorization", Configuration.GetValue<string>("Modules:AzureAPIM:BasicAuth"));
+                message.Headers.Add("Authorization", Configuration.GetValue<string>("SAPODataAPI:BasicAuth"));
                 //message.Headers.Add("Authorization", "Bearer " + accessToken);
-                message.Headers.Add("Ocp-Apim-Subscription-Key", Configuration.GetValue<string>("Modules:AzureAPIM:Ocp-Apim-Subscription-Key"));
-                message.Headers.Add("Ocp-Apim-Trace", Configuration.GetValue<string>("Modules:AzureAPIM:Ocp-Apim-Trace"));
+                message.Headers.Add("Ocp-Apim-Subscription-Key", Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
+                message.Headers.Add("Ocp-Apim-Trace", Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Trace"));
             };
 
             return oDataClientSettings;
