@@ -13,8 +13,8 @@ We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for 
 7. Test the $metadata api call to verify connectivity from Azure APIM to your SAP backend
 
 ## Authentication considerations
-- This project leverages code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" library.
-- Alternatively you could use the Authentication option of Azure App Service instead to keep the code clean of authentication specifics.
+- This project leverages code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" library.
+- In order to speed up and stream line the handling of the different tokens required for SAP Principal Propagation consider adding an additional token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. Moving this token aquisition call logic into APIM deprives you of the capability to caching the tokens due to the stateless nature of the setup.
 
 ## X-CSRF-Token handling
 SAP OData services are protected by CSRF tokens usually.
