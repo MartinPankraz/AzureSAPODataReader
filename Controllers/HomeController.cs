@@ -13,6 +13,7 @@ using System.Net.Http;
 using Microsoft.Identity.Web;
 using System.Net;
 using System.Text.Json;
+using System.Text;
 
 namespace AzureSAPODataReader.Controllers
 {
@@ -42,6 +43,19 @@ namespace AzureSAPODataReader.Controllers
                 .For<ProductViewModel>("Products")
                 .Top(10)
                 .FindEntriesAsync();
+            /*HttpRequestMessage msg = new HttpRequestMessage(HttpMethod.Get, baseAPIUrl + "/$metadata");
+            msg.Headers.Add("x-csrf-token", "Fetch");
+            HttpClient client = await getHttpClientForUsername(scopes);
+            HttpResponseMessage responseMessage = await client.SendAsync(msg);
+            
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                HttpRequestMessage msg2 = new HttpRequestMessage(HttpMethod.Patch, baseAPIUrl + "/Products('AR-FB-1000')");
+                msg2.Headers.Add("x-csrf-token", responseMessage.Headers.GetValues("x-csrf-token").First());
+                HttpContent content = new StringContent("{\"Price\":\"3.5\"}", Encoding.UTF8, "application/json");
+                msg2.Content = content;
+                HttpResponseMessage responseMessage2 = await client.SendAsync(msg2);
+            }*/
 
             return View(products);
         }
@@ -51,7 +65,22 @@ namespace AzureSAPODataReader.Controllers
             string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(scopes);
             SAPTokenCacheContent content = await TokenCache.GetSAPTokenCacheContentAsync(accessToken, baseAPIUrl);
 
-            var client = new ODataClient(content.getODataClientSettings());//SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), content.accessToken, true));
+            var client = new ODataClient(content.getODataClientSettingsAsync());//SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), content.accessToken, true));
+            return client;
+        }
+        //plain http implementation for initial test
+        private async Task<HttpClient> getHttpClientForUsername(string[] scopes)
+        {
+            string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(scopes);
+            SAPTokenCacheContent content = await TokenCache.GetSAPTokenCacheContentAsync(accessToken, baseAPIUrl);
+
+            var handler = new HttpClientHandler(){
+                ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true
+            };
+            var client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {content.accessToken}");
+            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
+            client.BaseAddress = new Uri(baseAPIUrl);
             return client;
         }
 

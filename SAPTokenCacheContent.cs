@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Simple.OData.Client;
 
@@ -11,7 +12,6 @@ namespace AzureSAPODataReader
     public class SAPTokenCacheContent
     {
         private readonly IConfiguration _Configuration;
-        public IList<string> cookies{get;set;} = new List<string>();
 
         public SAPTokenCacheContent(IConfiguration configuration, string userIdentifier, string url)
         {
@@ -20,46 +20,47 @@ namespace AzureSAPODataReader
             this.url = url;
         }
         public string accessToken { get; set; }
-        public string csrfToken { get; set; } = "";
         public string userIdentifier { get;  }
         public string url { get;  }
 
-        public ODataClientSettings getODataClientSettings()
+        public ODataClientSettings getODataClientSettingsAsync()
         {
-            var oDataClientSettings = new ODataClientSettings(new Uri(url));
+            var myClientOverride = new HttpClient(){BaseAddress = new Uri(url)};
+            myClientOverride.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+            //myClientOverride.DefaultRequestHeaders.Add("Authorization", Configuration.GetValue<string>("SAPODataAPI:BasicAuth"));
+            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
+            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Trace", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Trace"));
+            
+            var oDataClientSettings = new ODataClientSettings(myClientOverride);
             //ignore cookie container so we can set SAP cookies ourselves
             //https://github.com/simple-odata-client/Simple.OData.Client/issues/37
-            oDataClientSettings.OnApplyClientHandler = handler => handler.UseCookies = false;
+            //oDataClientSettings.OnApplyClientHandler = handler => handler.UseCookies = false;
+            /*oDataClientSettings.OnApplyClientHandler = handler =>{
+                //Remove this line for production
+                handler.ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true;
+            };*/
             oDataClientSettings.OnTrace = (x, y) => Console.WriteLine("TRACE---->" + string.Format(x, y));
             oDataClientSettings.BeforeRequest += delegate (HttpRequestMessage message)
             {
-                //message.Headers.Add("Authorization", Configuration.GetValue<string>("SAPODataAPI:BasicAuth"));
-                message.Headers.Add("Authorization", "Bearer " + accessToken);
-                if(message.Method.Equals(HttpMethod.Get)){
-                    message.Headers.Add("X-CSRF-Token", "Fetch");
-                }else{
-                    message.Headers.Add("X-CSRF-Token", csrfToken);
-                    foreach (string cookie in cookies){
-                        message.Headers.Add("Cookie", cookie);
-                    }
-                }
-                message.Headers.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
-                message.Headers.Add("Ocp-Apim-Trace", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Trace"));
-            };
-
-            oDataClientSettings.AfterResponse += delegate (HttpResponseMessage message)
-            {
-                //if (message.StatusCode == HttpStatusCode.OK){
-                    if(message.Headers.Contains("X-CSRF-Token"))
+                //preflight x-crf-token fetch, because odata client closes http connection each time it makes a request
+                if(message.Method != HttpMethod.Get)
+                {
+                    HttpClient csrfClient = oDataClientSettings.HttpClient;
+                    HttpRequestMessage msg = new HttpRequestMessage(HttpMethod.Head, url + "/");
+                    msg.Headers.Add("x-csrf-token", "Fetch");
+                    
+                    HttpResponseMessage responseMessage = csrfClient.SendAsync(msg).Result;
+                    
+                    if (responseMessage.IsSuccessStatusCode)
                     {
-                        csrfToken = message.Headers.GetValues("X-CSRF-Token").FirstOrDefault();
-                        cookies = message.Headers.GetValues("Set-Cookie").ToList();
+                        message.Headers.Add("x-csrf-token", responseMessage.Headers.GetValues("x-csrf-token").FirstOrDefault());
                     }
-                //}
+                }   
             };
 
             return oDataClientSettings;
         }
+        
     }
 
 }
