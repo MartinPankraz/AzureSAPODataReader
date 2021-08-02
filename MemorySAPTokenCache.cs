@@ -32,19 +32,25 @@ namespace AzureSAPODataReader
             var identifier = user + "|" + SAPUrl;
             if (_cache.ContainsKey(identifier))
             {
-                return _cache[identifier];
-                //toDo: check if the cache is expired
-                
-
-
-
+                if(!_cache[identifier].IsExpired()){
+                    return _cache[identifier];
+                }else{
+                    _cache.Remove(identifier);
+                    return await getSAPToken(AADTokenContainingUniqueUserIdentifier, SAPUrl, user, identifier);
+                }
             }else
             {
-                var myTokenCache = new SAPTokenCacheContent(_Configuration, user, SAPUrl);
-                myTokenCache.accessToken = await getSAMLFromBearerToken(AADTokenContainingUniqueUserIdentifier);
-                _cache.Add(identifier, myTokenCache);
-                return myTokenCache;
+                return await getSAPToken(AADTokenContainingUniqueUserIdentifier, SAPUrl, user, identifier);
             }
+        }
+
+        private async Task<SAPTokenCacheContent> getSAPToken(string AADTokenContainingUniqueUserIdentifier, string SAPUrl, string user, string identifier)
+        {
+            var myTokenCache = new SAPTokenCacheContent(_Configuration, user, SAPUrl);
+            myTokenCache.accessToken = await getSAMLFromBearerToken(AADTokenContainingUniqueUserIdentifier);
+
+            _cache.Add(identifier, myTokenCache);
+            return myTokenCache;
         }
 
         private async Task<string> getSAMLFromBearerToken(string accessToken)
