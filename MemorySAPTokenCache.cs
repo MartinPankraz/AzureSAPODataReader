@@ -15,11 +15,13 @@ namespace AzureSAPODataReader
 {
     public class MemorySAPTokenCache : ISAPTokenCache
     {
-        public MemorySAPTokenCache(IConfiguration configuration)
+        public MemorySAPTokenCache(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             _Configuration = configuration;
+            this.httpClientFactory = httpClientFactory;
         }
         private Dictionary<string, SAPTokenCacheContent> _cache = new Dictionary<string, SAPTokenCacheContent>();
+        private readonly IHttpClientFactory httpClientFactory;
 
         public IConfiguration _Configuration { get; }
 
@@ -55,10 +57,10 @@ namespace AzureSAPODataReader
 
         private async Task<string> getSAMLFromBearerToken(string accessToken)
         {
-            var handler = new HttpClientHandler(){
+            /*var handler = new HttpClientHandler(){
                 ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true
-            };
-            var client = new HttpClient(handler);
+            };*/
+            var client = httpClientFactory.CreateClient();
             var nvc = new List<KeyValuePair<string, string>>();
                 nvc.Add(new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"));
                 nvc.Add(new KeyValuePair<string, string>("assertion", accessToken));
@@ -106,10 +108,10 @@ namespace AzureSAPODataReader
 
         private async Task<string> getSAML2BearerToken(string samlToken)
         {
-            var handler = new HttpClientHandler(){
+            /*var handler = new HttpClientHandler(){
                 ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true
-            };
-            var client = new HttpClient(handler);
+            };*/
+            var client = httpClientFactory.CreateClient();
             var nvc = new List<KeyValuePair<string, string>>();
                 nvc.Add(new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:saml2-bearer"));
                 nvc.Add(new KeyValuePair<string, string>("assertion", samlToken));
