@@ -194,7 +194,7 @@
 				"header": [
 					{
 						"key": "Ocp-Apim-Subscription-Key",
-						"value": "317f2f15fa6d40fea04de850c81fac8b",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
 						"type": "text"
 					}
 				],
@@ -256,7 +256,7 @@
 				"header": [
 					{
 						"key": "Ocp-Apim-Subscription-Key",
-						"value": "317f2f15fa6d40fea04de850c81fac8b",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
 						"type": "text"
 					}
 				],
@@ -339,6 +339,10 @@
 		{
 			"key": "SAPBearerToken",
 			"value": ""
+		},
+		{
+			"key": "Ocp-Apim-Subscription-Key",
+			"value": "<<your Ocp-Apim-Subscription-Key>>"
 		}
 	]
 }
