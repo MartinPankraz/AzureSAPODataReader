@@ -24,14 +24,15 @@ namespace AzureSAPODataReader
         public string accessToken { get; set; }
         public string userIdentifier { get; }
         public string url { get; }
+        public DateTime expiresAt { get; set; }
 
         public bool IsExpired()
         {
-            var now = DateTime.UtcNow;
 
-            var SAPHandler = new JwtSecurityTokenHandler();
-            var SAPtoken = SAPHandler.ReadJwtToken(accessToken);
-            return SAPtoken.ValidTo < now;
+            //var SAPHandler = new JwtSecurityTokenHandler();
+            //Todo: check SAP token type to read it
+            //var SAPtoken = SAPHandler.ReadJwtToken(accessToken);
+            return expiresAt < DateTime.UtcNow;//SAPtoken.ValidTo < now;
         }
 
         public ODataClientSettings getODataClientSettingsAsync()

@@ -1,3 +1,4 @@
+using System;
 using Simple.OData.Client;
 
 namespace AzureSAPODataReader
@@ -7,6 +8,7 @@ namespace AzureSAPODataReader
         string accessToken { get; set; }
         string userIdentifier { get; }
         string url { get; }
+        DateTime expiresAt { get; set; }
 
         ODataClientSettings getODataClientSettingsAsync();
         bool IsExpired();

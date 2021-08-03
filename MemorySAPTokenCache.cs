@@ -48,7 +48,7 @@ namespace AzureSAPODataReader
         {
             var myTokenCache = new SAPTokenCacheContent(_Configuration, user, SAPUrl);
             myTokenCache.accessToken = await getSAMLFromBearerToken(AADTokenContainingUniqueUserIdentifier);
-
+            myTokenCache.expiresAt = DateTime.UtcNow.AddSeconds(_Configuration.GetValue<int>("SAPOAuthAPI:SAPTokenCacheExpirationInSeconds"));
             _cache.Add(identifier, myTokenCache);
             return myTokenCache;
         }
