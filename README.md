@@ -13,10 +13,14 @@ We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for 
 6. Add HEAD Operation `/` for efficient client token caching.
 7. Test the $metadata api call to verify connectivity from Azure APIM to your SAP backend
 
+In case your SAP backend uses a self-signed certificate consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
+
 ## Project setup
 For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring.
 
 In addition to that there is a Postman collection with the relevant calls to check your setup. You need to configure the variables for that particular collection to start testing. Please note that the initial AAD login relies on the fragment concept explained by Martin Raepple in his [blog series](https://blogs.sap.com/2020/07/17/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-cloud-platform-scp/) (step 48) on the wider topic. This is necessary to be able to test from Postman only. The dotnet project does this natively from MSAL.
+
+Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in all-access subscription -> ... -> Show Primary Key
 
 ## Authentication considerations
 - This project leverages code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" library.
@@ -24,5 +28,5 @@ In addition to that there is a Postman collection with the relevant calls to che
 
 ## X-CSRF-Token handling
 SAP OData services are protected by CSRF tokens usually.
-- This project leverages code based configuration to inspect http calls for csrf tokens and inject as we go.
+- This project leverages code based configuration to inspect http calls for csrf tokens, inject as we go.
 - Alternatively you could look into adding an APIM policy for "pre-flight" requests to handle the CSRF token for updates. Have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway) for more details.
