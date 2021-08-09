@@ -14,6 +14,7 @@ using Microsoft.Identity.Web;
 using System.Net;
 using System.Text.Json;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 
 namespace AzureSAPODataReader.Controllers
 {

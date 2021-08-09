@@ -49,13 +49,14 @@ namespace AzureSAPODataReader
         private async Task<SAPTokenCacheContent> getSAPToken(string AADTokenContainingUniqueUserIdentifier, string SAPUrl, string user, string identifier)
         {
             var myTokenCache = new SAPTokenCacheContent(_Configuration, user, SAPUrl);
-            myTokenCache.accessToken = await getSAMLFromBearerToken(AADTokenContainingUniqueUserIdentifier);
-            myTokenCache.expiresAt = DateTime.UtcNow.AddSeconds(_Configuration.GetValue<int>("SAPOAuthAPI:SAPTokenCacheExpirationInSeconds"));
+            var assertion = await getSAMLFromBearerToken(AADTokenContainingUniqueUserIdentifier);
+            myTokenCache.accessToken = assertion.access_token;
+            myTokenCache.expiresAt = DateTime.UtcNow.AddSeconds(double.Parse(assertion.expires_in));//_Configuration.GetValue<int>("SAPOAuthAPI:SAPTokenCacheExpirationInSeconds"));
             _cache.Add(identifier, myTokenCache);
             return myTokenCache;
         }
 
-        private async Task<string> getSAMLFromBearerToken(string accessToken)
+        private async Task<SAML2BearerResponseModel> getSAMLFromBearerToken(string accessToken)
         {
             /*var handler = new HttpClientHandler(){
                 ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true
@@ -86,27 +87,17 @@ namespace AzureSAPODataReader
             if (httpResponse.Content is object && httpResponse.Content.Headers.ContentType.MediaType == "application/json")
             {
                 var contentStream = await httpResponse.Content.ReadAsStreamAsync();
-
-                try
-                {
-                    var OAuthServiceResponse = await JsonSerializer.DeserializeAsync<OAuthResponseModel>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
-                    var finalSAPBearerToken = await getSAML2BearerToken(OAuthServiceResponse.access_token);
-                    return finalSAPBearerToken;
-                }
-                catch (JsonException) // Invalid JSON
-                {
-                    Console.WriteLine("Invalid JSON.");
-                }                
+                var OAuthServiceResponse = await JsonSerializer.DeserializeAsync<OAuthResponseModel>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+                var finalSAPBearerResponse = await getSAML2BearerToken(OAuthServiceResponse.access_token);
+                return finalSAPBearerResponse;                
             }
             else
             {
-                Console.WriteLine("HTTP Response was invalid and cannot be deserialised.");
+                throw new Exception("Invalid response from SAP OAuth API.");
             }
-
-            return "";
         }
 
-        private async Task<string> getSAML2BearerToken(string samlToken)
+        private async Task<SAML2BearerResponseModel> getSAML2BearerToken(string samlToken)
         {
             /*var handler = new HttpClientHandler(){
                 ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) => true
@@ -137,23 +128,13 @@ namespace AzureSAPODataReader
             if (httpResponse.Content is object && httpResponse.Content.Headers.ContentType.MediaType == "application/json")
             {
                 var contentStream = await httpResponse.Content.ReadAsStreamAsync();
-
-                try
-                {
-                    var OAuthServiceResponse = await JsonSerializer.DeserializeAsync<SAML2BearerResponseModel>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
-                    return OAuthServiceResponse.access_token;
-                }
-                catch (JsonException) // Invalid JSON
-                {
-                    Console.WriteLine("Invalid JSON.");
-                }                
+                var OAuthServiceResponse = await JsonSerializer.DeserializeAsync<SAML2BearerResponseModel>(contentStream, new JsonSerializerOptions { IgnoreNullValues = true, PropertyNameCaseInsensitive = true });
+                return OAuthServiceResponse;
             }
             else
             {
-                Console.WriteLine("HTTP Response was invalid and cannot be deserialised.");
+                throw new Exception("HTTP Response was invalid and cannot be deserialised.");
             }
-
-            return "";
         }
     }
 }

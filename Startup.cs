@@ -46,6 +46,9 @@ namespace AzureSAPODataReader
                     .RequireAuthenticatedUser()
                     .Build();
                 options.Filters.Add(new AuthorizeFilter(policy));
+            }).AddMvcOptions(options =>
+            {
+                options.Filters.Add(new InteractiveSignInRequiredExceptionFilterAttribute());
             });
             //services.AddRazorPages();
         }
