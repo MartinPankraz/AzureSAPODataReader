@@ -32,3 +32,6 @@ Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in 
 SAP OData services are protected by CSRF tokens usually.
 - This project leverages code based configuration to inspect http calls for csrf tokens, inject as we go.
 - Alternatively you could look into adding an APIM policy for "pre-flight" requests to handle the CSRF token for updates. Have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway) for more details.
+
+## Thoughts on OData result chaching in APIM
+One of the strengths of distributed APIM solutions is the capability to cache seldomnly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the chaches results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
