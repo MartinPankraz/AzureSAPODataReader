@@ -1,5 +1,5 @@
 # AzureSAPODataReader
-A dotnet 5 web project to showcase integration of Azure AD with Azure API Management for SAP OData consumption leveraging Principal Propagation. Have a look at Martin Raepple's [post series](https://blogs.sap.com/2021/04/13/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-business-technology-platform-btp-part-iv-sso-with-a-power-virtual-agent-chatbot-and-on-premises-data-gateway/) for more insights in SAP Principal Propagation.
+A dotnet 5 web project to showcase integration of Azure AD with Azure API Management for SAP OData consumption leveraging Principal Propagation. Have a look at Martin Raepple's [post series](https://blogs.sap.com/2021/04/13/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-business-technology-platform-btp-part-iv-sso-with-a-power-virtual-agent-chatbot-and-on-premises-data-gateway/) for more insights on SAP Principal Propagation.
 
 We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for this project hosted on our S4 Lab environment.
 
@@ -15,23 +15,23 @@ We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for 
 7. Add HEAD Operation `/` for efficient client token caching.
 8. Test the $metadata api call to verify connectivity from Azure APIM to your SAP backend
 
-In case your SAP backend uses a self-signed certificate consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
+In case your SAP backend uses a self-signed certificate you may need to consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
 
 ## Project setup
-For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring.
+For your convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring.
 
 In addition to that there is a Postman collection with the relevant calls to check your setup. You need to configure the variables for that particular collection to start testing. Please note that the initial AAD login relies on the fragment concept explained by Martin Raepple in his [blog series](https://blogs.sap.com/2020/07/17/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-cloud-platform-scp/) (step 48) on the wider topic. This is necessary to be able to test from Postman only. The dotnet project does this natively from MSAL.
 
 Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in all-access subscription -> ... -> Show Primary Key
 
 ## Authentication considerations
-- This project leverages code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" library.
-- In order to speed up and stream line the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play. Moving this token aquisition call logic into APIM deprives you of the capability of caching the tokens due to the stateless nature of the setup.
+- This project leverages code based configuration with Azure Active Directory leveraging both the "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" libraries.
+- In order to speed up and streamline the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play. Moving this token acquisition call logic into APIM deprives you of the capability of caching the tokens due to the stateless nature of the setup.
 
 ## X-CSRF-Token handling
 SAP OData services are protected by CSRF tokens usually.
 - This project leverages code based configuration to inspect http calls for csrf tokens, inject as we go.
 - Alternatively you could look into adding an APIM policy for "pre-flight" requests to handle the CSRF token for updates. Have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway) for more details.
 
-## Thoughts on OData result chaching in APIM
-One of the strengths of distributed APIM solutions is the capability to cache seldomnly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the chaches results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
+## Thoughts on OData result caching in APIM
+One of the strengths of distributed APIM solutions is the capability to cache seldomly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the cached results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
