@@ -1,6 +1,8 @@
 # AzureSAPODataReader
 A dotnet 5 web project to showcase integration of Azure AD with Azure API Management for SAP OData consumption leveraging Principal Propagation. Have a look at Martin Raepple's [post series](https://blogs.sap.com/2021/04/13/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-business-technology-platform-btp-part-iv-sso-with-a-power-virtual-agent-chatbot-and-on-premises-data-gateway/) for more insights in SAP Principal Propagation.
 
+Find my associated blog post on the SAP Community [here](https://blogs.sap.com/2021/08/12/.net-speaks-odata-too-how-to-implement-azure-app-service-with-sap-odata-gateway/).
+
 We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for this project hosted on our S4 Lab environment.
 
 ![Overview Architecture](/overview-architecture.png)
