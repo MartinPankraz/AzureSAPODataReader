@@ -56,6 +56,7 @@ namespace AzureSAPODataReader
             return myTokenCache;
         }
 
+
         private async Task<SAML2BearerResponseModel> getSAMLFromBearerToken(string accessToken)
         {
             /*var handler = new HttpClientHandler(){

@@ -23,7 +23,7 @@ namespace AzureSAPODataReader.Controllers
     {
         private ITokenAcquisition TokenAcquisition;
         private string baseAPIUrl;
-        public HomeController(IConfiguration configuration, ISAPTokenCache tokenCache, ITokenAcquisition tokenAcquisition)
+        public HomeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, ISAPTokenCache tokenCache = null)
         {
             _Configuration = configuration;
             TokenCache = tokenCache;
@@ -44,19 +44,6 @@ namespace AzureSAPODataReader.Controllers
                 .For<ProductViewModel>("Products")
                 .Top(10)
                 .FindEntriesAsync();
-            /*HttpRequestMessage msg = new HttpRequestMessage(HttpMethod.Get, baseAPIUrl + "/$metadata");
-            msg.Headers.Add("x-csrf-token", "Fetch");
-            HttpClient client = await getHttpClientForUsername(scopes);
-            HttpResponseMessage responseMessage = await client.SendAsync(msg);
-            
-            if (responseMessage.IsSuccessStatusCode)
-            {
-                HttpRequestMessage msg2 = new HttpRequestMessage(HttpMethod.Patch, baseAPIUrl + "/Products('AR-FB-1000')");
-                msg2.Headers.Add("x-csrf-token", responseMessage.Headers.GetValues("x-csrf-token").First());
-                HttpContent content = new StringContent("{\"Price\":\"3.5\"}", Encoding.UTF8, "application/json");
-                msg2.Content = content;
-                HttpResponseMessage responseMessage2 = await client.SendAsync(msg2);
-            }*/
 
             return View(products);
         }
@@ -64,10 +51,33 @@ namespace AzureSAPODataReader.Controllers
         private async Task<ODataClient> getODataClientForUsername(string[] scopes)
         {
             string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(scopes);
-            SAPTokenCacheContent content = await TokenCache.GetSAPTokenCacheContentAsync(accessToken, baseAPIUrl);
-
-            var client = new ODataClient(content.getODataClientSettingsAsync());//SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), content.accessToken, true));
+            ODataClient client = null;
+            if(TokenCache != null)
+            {
+                //If ISAPTokenCache is injected, use it to get the token cache
+                SAPTokenCacheContent content = await TokenCache.GetSAPTokenCacheContentAsync(accessToken, baseAPIUrl);
+                client = new ODataClient(content.getODataClientSettingsAsync());//SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), content.accessToken, true));
+            }else
+            {
+                //assume this is done server-side by a proxy like Azure APIM (using policy)
+                client = new ODataClient(getODataClientSettings(accessToken));
+            }
+            
             return client;
+        }
+
+        private ODataClientSettings getODataClientSettings(string accessToken)
+        {
+            var myClientOverride = new HttpClient() { BaseAddress = new Uri(baseAPIUrl) };
+            myClientOverride.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+            //myClientOverride.DefaultRequestHeaders.Add("Authorization", Configuration.GetValue<string>("SAPODataAPI:BasicAuth"));
+            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
+            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Trace", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Trace"));
+
+            var oDataClientSettings = new ODataClientSettings(myClientOverride);
+            oDataClientSettings.OnTrace = (x, y) => Console.WriteLine("TRACE---->" + string.Format(x, y));
+
+            return oDataClientSettings;
         }
         //plain http implementation for initial test
         private async Task<HttpClient> getHttpClientForUsername(string[] scopes)
