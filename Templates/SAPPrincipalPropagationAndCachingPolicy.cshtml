@@ -1,0 +1,125 @@
+﻿<!--
+    IMPORTANT:
+    - Policy elements can appear only within the <inbound>, <outbound>, <backend> section elements.
+    - To apply a policy to the incoming request (before it is forwarded to the backend service), place a corresponding policy element within the <inbound> section element.
+    - To apply a policy to the outgoing response (before it is sent back to the caller), place a corresponding policy element within the <outbound> section element.
+    - To add a policy, place the cursor at the desired insertion point and select a policy from the sidebar.
+    - To remove a policy, delete the corresponding policy statement from the policy document.
+    - Position the <base> element within a section element to inherit all policies from the corresponding section element in the enclosing scope.
+    - Remove the <base> element to prevent inheriting policies from the corresponding section element in the enclosing scope.
+    - Policies are applied in the order of their appearance, from the top down.
+    - Comments within policy elements are not supported and may disappear. Place your comments between policy elements or at a higher level scope.
+-->
+<policies>
+	<inbound>
+		<base />
+		<validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer">
+			<openid-config url="https://login.microsoftonline.com/{{AADTenantId}}/.well-known/openid-configuration" />
+			<!--<audiences>  
+                <audience></audience>
+            </audiences>
+            <issuers>
+                <issuer>https://sts.windows.net//</issuer>
+            </issuers>-->
+		</validate-jwt>
+        <set-variable name="AADRegisteredAppClientId" value="{{AADRegisteredAppClientId}}" />
+        <set-variable name="AADRegisteredAppClientSecret" value="{{AADRegisteredAppClientSecret}}" />
+        <set-variable name="AADSAPResource" value="{{AADSAPResource}}" />
+        <set-variable name="SAPOAuthClientID" value="{{SAPOAuthClientID}}" />
+        <set-variable name="SAPOAuthClientSecret" value="{{SAPOAuthClientSecret}}" />
+        <set-variable name="SAPOAuthScope" value="{{SAPOAuthScope}}" />
+		<cache-lookup-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerToken" />
+		<choose>
+			<when condition="@(!context.Variables.ContainsKey("SAPBearerToken"))">
+				<send-request mode="new" response-variable-name="fetchSAMLAssertion" timeout="10" ignore-error="false">
+					<set-url>https://login.microsoftonline.com/{{AADTenantId}}/oauth2/token</set-url>
+					<set-method>POST</set-method>
+					<set-header name="Content-Type" exists-action="override">
+						<value>application/x-www-form-urlencoded</value>
+					</set-header>
+					<set-body>
+                        @{
+                            var _AADRegisteredAppClientId = context.Variables["AADRegisteredAppClientId"];
+                            var _AADRegisteredAppClientSecret = context.Variables["AADRegisteredAppClientSecret"];
+                            var _AADSAPResource = context.Variables["AADSAPResource"];
+                            var assertion = context.Request.Headers.GetValueOrDefault("Authorization","").Replace("Bearer ","");
+                            return $"grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={assertion}&client_id={_AADRegisteredAppClientId}&client_secret={_AADRegisteredAppClientSecret}&resource={_AADSAPResource}&requested_token_use=on_behalf_of&requested_token_type=urn:ietf:params:oauth:token-type:saml2";
+                        }
+                    </set-body>
+				</send-request>
+				<set-variable name="accessToken" value="@((string)((IResponse)context.Variables["fetchSAMLAssertion"]).Body.As<JObject>()["access_token"])" />
+				<send-request mode="new" response-variable-name="fetchSAPBearer" timeout="10" ignore-error="false">
+					<set-url>https://{{SAPOAuthTokenEndpoint}}/sap/bc/sec/oauth2/token</set-url>
+					<set-method>POST</set-method>
+					<set-header name="Content-Type" exists-action="override">
+						<value>application/x-www-form-urlencoded</value>
+					</set-header>
+					<set-header name="Authorization" exists-action="override">
+						<value>@{
+                                var _SAPOAuthClientID = context.Variables["SAPOAuthClientID"];
+                                var _SAPOAuthClientSecret = context.Variables["SAPOAuthClientSecret"];
+                                return "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_SAPOAuthClientID}:{_SAPOAuthClientSecret}"));
+                            }
+                        </value>
+					</set-header>
+					<set-body>
+                        @{
+                            var _SAPOAuthClientID = context.Variables["SAPOAuthClientID"];
+                            var _SAPOAuthScope = context.Variables["SAPOAuthScope"];
+                            var assertion2 = context.Variables["accessToken"];
+                            return $"grant_type=urn:ietf:params:oauth:grant-type:saml2-bearer&assertion={assertion2}&client_id={_SAPOAuthClientID}&scope={_SAPOAuthScope}";
+                        }
+                    </set-body>
+				</send-request>
+				<!-- Remember SAP Bearer tokens -->
+				<set-variable name="SAPResponseObject" value="@(((IResponse)context.Variables["fetchSAPBearer"]).Body.As<JObject>())" />
+				<set-variable name="SAPBearerTokenExpiry" value="@(((JObject)context.Variables["SAPResponseObject"])["expires_in"].ToString())" />
+				<set-variable name="SAPBearerToken" value="@(((JObject)context.Variables["SAPResponseObject"])["access_token"].ToString())" />
+				<!--cache Bearer till expiry-->
+				<cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]))" />
+			</when>
+		</choose>
+		<choose>
+			<!-- CSRF-token only required for every operation other than GET or HEAD -->
+			<when condition="@(context.Request.Method != "GET" && context.Request.Method != "HEAD")">
+				<!-- Creating a subrequest "SAPCSRFToken" and set it as HEAD request to get the token and cookie.-->
+				<send-request mode="new" response-variable-name="SAPCSRFToken" timeout="10" ignore-error="false">
+					<set-url>@(context.Request.Url.ToString())</set-url>
+					<set-method>HEAD</set-method>
+					<set-header name="X-CSRF-Token" exists-action="override">
+						<value>Fetch</value>
+					</set-header>
+					<set-header name="Authorization" exists-action="override">
+						<value>@("Bearer " + (string)context.Variables["SAPBearerToken"])</value>
+					</set-header>
+				</send-request>
+				<!-- Extract the token from the "SAPCSRFToken" and set as header in the POST request. -->
+				<set-header name="X-CSRF-Token" exists-action="skip">
+					<value>@(((IResponse)context.Variables["SAPCSRFToken"]).Headers.GetValueOrDefault("x-csrf-token"))</value>
+				</set-header>
+				<!-- Extract the Cookie from the "SAPCSRFToken" and set as header in the POST request. -->
+				<set-header name="Cookie" exists-action="skip">
+					<value>
+					@{
+					string rawcookie = ((IResponse)context.Variables["SAPCSRFToken"]).Headers.GetValueOrDefault("Set-Cookie");
+					string[] cookies = rawcookie.Split(';');
+					string xsrftoken = cookies.FirstOrDefault( ss => ss.Contains("sap-XSRF"));
+					return xsrftoken.Split(',')[1];}
+				</value>
+				</set-header>
+			</when>
+		</choose>
+		<set-header name="Authorization" exists-action="override">
+			<value>@("Bearer " + (string)context.Variables["SAPBearerToken"])</value>
+		</set-header>
+	</inbound>
+	<backend>
+		<base />
+	</backend>
+	<outbound>
+		<base />
+	</outbound>
+	<on-error>
+		<base />
+	</on-error>
+</policies>
