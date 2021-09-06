@@ -26,6 +26,7 @@ namespace AzureSAPODataReader.Controllers
         public HomeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, ISAPTokenCache tokenCache = null)
         {
             _Configuration = configuration;
+            //token cache will be null if APIM policy used for SAP principal propagation instead of client-side caching.
             TokenCache = tokenCache;
             baseAPIUrl = configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress");
             TokenAcquisition = tokenAcquisition;

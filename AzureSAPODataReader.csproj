@@ -3,6 +3,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>aspnet-AzureSAPODataReader-02c25d65-120b-4ae9-b150-cd77f5305ab1</UserSecretsId>
     <WebProject_DirectoryAccessLevelKey>1</WebProject_DirectoryAccessLevelKey>
+    <DefaultItemExcludes>Templates/**;$(DefaultItemExcludes)</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="5.0.8"/>

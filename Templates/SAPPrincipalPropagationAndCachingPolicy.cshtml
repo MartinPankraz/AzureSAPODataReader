@@ -49,7 +49,7 @@
 				</send-request>
 				<set-variable name="accessToken" value="@((string)((IResponse)context.Variables["fetchSAMLAssertion"]).Body.As<JObject>()["access_token"])" />
 				<send-request mode="new" response-variable-name="fetchSAPBearer" timeout="10" ignore-error="false">
-					<set-url>https://{{SAPOAuthTokenEndpoint}}/sap/bc/sec/oauth2/token</set-url>
+					<set-url>https://{{SAPOAuthServerAdressForTokenEndpoint}}/sap/bc/sec/oauth2/token</set-url>
 					<set-method>POST</set-method>
 					<set-header name="Content-Type" exists-action="override">
 						<value>application/x-www-form-urlencoded</value>

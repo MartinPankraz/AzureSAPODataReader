@@ -3,7 +3,7 @@ A dotnet 5 web project to showcase integration of Azure AD with Azure API Manage
 
 Find my associated blog post on the SAP Community [here](https://blogs.sap.com/2021/08/12/.net-speaks-odata-too-how-to-implement-azure-app-service-with-sap-odata-gateway/).
 
-We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for this project hosted on our S4 Lab environment.
+As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service hosted on our S4 Lab environment.
 
 ![Overview Architecture](/overview-architecture.png)
 
@@ -19,8 +19,15 @@ We used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service for 
 
 In case your SAP backend uses a self-signed certificate consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
 
+SKIP steps 9-12 if you want to rely on client-side caching or implement SAP Principal Propagation at a later stage. We highly recommend using the APIM policy over the client-side approach though. See section `Authentication considerations` for more details.
+
+9. Add policy [SAPPrincipalPropagationAndCachingPolicy.cshtml](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) to your API base (All Operations -> Inbound Processing -> </>) on APIM and save.
+10. Maintain your tenant specific params in [UpdateAPIMwithVariablesForSAPPolicy.sh](Templates/UpdateAPIMwithVariablesForSAPPolicy.sh) locally. The SAP policy relies on them for configuration of the SAP Principal Propagation.
+11. Open Azure Cloud Shell from the top menu in your Azure Portal and upload the bash script [UpdateAPIMwithVariablesForSAPPolicy.sh](Templates/UpdateAPIMwithVariablesForSAPPolicy.sh). If you know your way around Azure, of course you can use other means to execute the bash commands.
+12. Switch the Azure Cloud Shell environment to bash and run `bash UpdateAPIMwithVariablesForSAPPolicy.sh`
+
 ## Project setup
-For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring.
+For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring. Depending on your caching choice you will need to drop parts of the client-side config.
 
 In addition to that there is a Postman collection with the relevant calls to check your setup. You need to configure the variables for that particular collection to start testing. Please note that the initial AAD login relies on the fragment concept explained by Martin Raepple in his [blog series](https://blogs.sap.com/2020/07/17/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-cloud-platform-scp/) (step 48) on the wider topic. This is necessary to be able to test from Postman only. The dotnet project does this natively from MSAL.
 
@@ -28,12 +35,17 @@ Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in 
 
 ## Authentication considerations
 - This project leverages code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" library.
-- In order to speed up and stream line the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play. Moving this token aquisition call logic into APIM deprives you of the capability of caching the tokens due to the stateless nature of the setup.
+- In order to speed up and stream line the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play.
 
-## X-CSRF-Token handling
+### Client-side vs. APIM caching for SAP Principal Propagation
+You can either do this with client-side caching from the [.NET code](Controllers/HomeController.cs) or leverage our [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml). We recommend the latter, because it solves SAP Principal Propagation for all clients and lifts the burden for each client to implement the multi-OAuth sequence of calls for the OAuth2SAMLBearerAssertion flow. 
+
+### X-CSRF-Token handling
 SAP OData services are protected by CSRF tokens usually.
-- This project leverages code based configuration to inspect http calls for csrf tokens, inject as we go.
-- Alternatively you could look into adding an APIM policy for "pre-flight" requests to handle the CSRF token for updates. Have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway) for more details.
+- By default this project leverages a SAP specific [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) to inspect http calls for csrf tokens. Inject as we go so to say.
+- In case you are looking to use the client-side caching option, have a look at pre-flight logic implemented in [SAPTokenCacheContent.cs](SAPTokenCacheContent.cs) @ `getODataClientSettingsAsync`
+
+For further reading on csrf-token handling for SAP with APIM policy, have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway).
 
 ## Thoughts on OData result chaching in APIM
 One of the strengths of distributed APIM solutions is the capability to cache seldomnly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the chaches results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.

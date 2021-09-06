@@ -34,6 +34,7 @@ namespace AzureSAPODataReader
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpClient();
+            //uncomment to start using client side caching for SAP Bearer tokens instead of using APIM policy
             //services.AddSingleton<ISAPTokenCache,MemorySAPTokenCache>();
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"))
