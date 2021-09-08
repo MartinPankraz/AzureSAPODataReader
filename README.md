@@ -26,6 +26,8 @@ SKIP steps 9-12 if you want to rely on client-side caching or implement SAP Prin
 11. Open Azure Cloud Shell from the top menu in your Azure Portal and upload the bash script [UpdateAPIMwithVariablesForSAPPolicy.sh](Templates/UpdateAPIMwithVariablesForSAPPolicy.sh). If you know your way around Azure, of course you can use other means to execute the bash commands.
 12. Switch the Azure Cloud Shell environment to bash and run `bash UpdateAPIMwithVariablesForSAPPolicy.sh`
 
+Find more policy snippets and expression cheatsheets on our [Azure Examples Repos](http://aka.ms/apimpolicyexamples).
+
 ## Project setup
 For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring. Depending on your caching choice you will need to drop parts of the client-side config.
 
