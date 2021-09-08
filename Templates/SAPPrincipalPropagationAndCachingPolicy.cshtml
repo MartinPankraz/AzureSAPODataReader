@@ -77,6 +77,8 @@
                             }
                         </value>
 					</set-header>
+					<!--  Don't expose APIM subscription key to the backend. -->
+        			<set-header exists-action="delete" name="Ocp-Apim-Subscription-Key"/>
 					<set-body>
                         @{
                             var _SAPOAuthClientID = context.Variables["SAPOAuthClientID"];
@@ -107,6 +109,8 @@
 					<set-header name="Authorization" exists-action="override">
 						<value>@("Bearer " + (string)context.Variables["SAPBearerToken"])</value>
 					</set-header>
+					<!--  Don't expose APIM subscription key to the backend. -->
+        			<set-header exists-action="delete" name="Ocp-Apim-Subscription-Key"/>
 				</send-request>
 				<!-- Extract the token and cookie from the "SAPCSRFToken" and set as header in the POST request. -->
 				<set-header name="X-CSRF-Token" exists-action="skip">
