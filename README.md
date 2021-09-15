@@ -8,6 +8,10 @@ As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod
 ![Overview Architecture](/overview-architecture.png)
 
 ## Azure API Management Config
+In case you are running your APIM instance in a private VNet you need to configure certain [network security group rules](https://docs.microsoft.com/en-us/azure/api-management/api-management-using-with-vnet?tabs=stv2#network-configuration) on your subnet, so it can reach the required Azure PaaS services.
+
+Once APIM is provisioned and setup you can continue with the SAP OData specific parts:
+
 1. Download the metadata xml for your given service. In our case we called `https://[s4-url]:[backend port]]/sap/opu/odata/sap/epm_ref_apps_prod_man_srv/$metadata`.
 2. Install odata to openapi [converter](https://github.com/oasis-tcs/odata-openapi).
 3. Configure the converter [tools ](https://github.com/oasis-tcs/odata-openapi/tree/main/tools) including the build environment. We applied `npm install -g windows-build-tools`. Alternatively look for [VS2017 build tools](https://my.visualstudio.com/Downloads?q=Visual+Studio+2017).
