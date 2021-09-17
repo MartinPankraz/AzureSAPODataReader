@@ -38,7 +38,7 @@ namespace AzureSAPODataReader
             //services.AddSingleton<ISAPTokenCache,MemorySAPTokenCache>();
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"))
-                .EnableTokenAcquisitionToCallDownstreamApi(/*new string[] { Configuration["SAPODataAPI:ScopeForAccessToken"] }*/)
+                .EnableTokenAcquisitionToCallDownstreamApi(new string[] { Configuration["AzureAd:ScopeForAccessToken"] })
                 .AddInMemoryTokenCaches();
 
             services.AddControllersWithViews(options =>

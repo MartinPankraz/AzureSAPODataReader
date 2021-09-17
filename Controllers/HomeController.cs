@@ -28,7 +28,7 @@ namespace AzureSAPODataReader.Controllers
             _Configuration = configuration;
             //token cache will be null if APIM policy used for SAP principal propagation instead of client-side caching.
             TokenCache = tokenCache;
-            baseAPIUrl = configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress");
+            baseAPIUrl = configuration.GetValue<string>("AzureAd:ApiBaseAddress");
             TokenAcquisition = tokenAcquisition;
         }
 
@@ -38,7 +38,7 @@ namespace AzureSAPODataReader.Controllers
         public async Task<IActionResult> Index()
         {
             // Acquire the access token.
-            string[] scopes = new string[] { _Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken") };
+            string[] scopes = new string[] { _Configuration.GetValue<string>("AzureAd:ScopeForAccessToken") };
             ODataClient client = await getODataClientForUsername(scopes);
 
             var products = await client
@@ -57,7 +57,7 @@ namespace AzureSAPODataReader.Controllers
             {
                 //If ISAPTokenCache is injected, use it to get the token cache
                 SAPTokenCacheContent content = await TokenCache.GetSAPTokenCacheContentAsync(accessToken, baseAPIUrl);
-                client = new ODataClient(content.getODataClientSettingsAsync());//SetODataToken(Configuration.GetValue<string>("SAPODataAPI:ApiBaseAddress"), content.accessToken, true));
+                client = new ODataClient(content.getODataClientSettingsAsync());//SetODataToken(Configuration.GetValue<string>("AzureAd:ApiBaseAddress"), content.accessToken, true));
             }else
             {
                 //assume this is done server-side by a proxy like Azure APIM (using policy)
@@ -71,9 +71,9 @@ namespace AzureSAPODataReader.Controllers
         {
             var myClientOverride = new HttpClient() { BaseAddress = new Uri(baseAPIUrl) };
             myClientOverride.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
-            //myClientOverride.DefaultRequestHeaders.Add("Authorization", Configuration.GetValue<string>("SAPODataAPI:BasicAuth"));
-            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
-            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Trace", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Trace"));
+            //myClientOverride.DefaultRequestHeaders.Add("Authorization", Configuration.GetValue<string>("AzureAd:BasicAuth"));
+            //myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("AzureAd:Ocp-Apim-Subscription-Key"));
+            myClientOverride.DefaultRequestHeaders.Add("Ocp-Apim-Trace", _Configuration.GetValue<string>("AzureAd:Ocp-Apim-Trace"));
 
             var oDataClientSettings = new ODataClientSettings(myClientOverride);
             oDataClientSettings.OnTrace = (x, y) => Console.WriteLine("TRACE---->" + string.Format(x, y));
@@ -91,7 +91,7 @@ namespace AzureSAPODataReader.Controllers
             };
             var client = new HttpClient(handler);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {content.accessToken}");
-            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("SAPODataAPI:Ocp-Apim-Subscription-Key"));
+            //client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _Configuration.GetValue<string>("AzureAd:Ocp-Apim-Subscription-Key"));
             client.BaseAddress = new Uri(baseAPIUrl);
             return client;
         }
@@ -99,7 +99,7 @@ namespace AzureSAPODataReader.Controllers
         public async Task<IActionResult> Edit(string id)
         {
             // Acquire the access token.
-            string[] scopes = new string[] { _Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken") };
+            string[] scopes = new string[] { _Configuration.GetValue<string>("AzureAd:ScopeForAccessToken") };
             ODataClient client = await getODataClientForUsername(scopes);
 
             ProductViewModel product = await client
@@ -122,7 +122,7 @@ namespace AzureSAPODataReader.Controllers
             if (ModelState.IsValid)
             {
                 // Acquire the access token.
-                string[] scopes = new string[] { _Configuration.GetValue<string>("SAPODataAPI:ScopeForAccessToken") };
+                string[] scopes = new string[] { _Configuration.GetValue<string>("AzureAd:ScopeForAccessToken") };
                 ODataClient client = await getODataClientForUsername(scopes);
 
                 ProductViewModel product = await client

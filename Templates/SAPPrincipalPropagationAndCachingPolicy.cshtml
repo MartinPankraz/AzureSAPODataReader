@@ -25,15 +25,15 @@
 		<base />
 		<validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer">
 			<openid-config url="https://login.microsoftonline.com/{{AADTenantId}}/.well-known/openid-configuration" />
-			<!--<audiences>  
-                <audience></audience>
+			<audiences>
+                <audience>api://{{APIMAADRegisteredAppClientId}}</audience>
             </audiences>
             <issuers>
-                <issuer>https://sts.windows.net//</issuer>
-            </issuers>-->
+                <issuer>https://sts.windows.net/{{AADTenantId}}/</issuer>
+            </issuers>
 		</validate-jwt>
-        <set-variable name="AADRegisteredAppClientId" value="{{AADRegisteredAppClientId}}" />
-        <set-variable name="AADRegisteredAppClientSecret" value="{{AADRegisteredAppClientSecret}}" />
+        <set-variable name="APIMAADRegisteredAppClientId" value="{{APIMAADRegisteredAppClientId}}" />
+        <set-variable name="APIMAADRegisteredAppClientSecret" value="{{APIMAADRegisteredAppClientSecret}}" />
         <set-variable name="AADSAPResource" value="{{AADSAPResource}}" />
         <set-variable name="SAPOAuthClientID" value="{{SAPOAuthClientID}}" />
         <set-variable name="SAPOAuthClientSecret" value="{{SAPOAuthClientSecret}}" />
@@ -51,8 +51,8 @@
 					</set-header>
 					<set-body>
                         @{
-                            var _AADRegisteredAppClientId = context.Variables["AADRegisteredAppClientId"];
-                            var _AADRegisteredAppClientSecret = context.Variables["AADRegisteredAppClientSecret"];
+                            var _AADRegisteredAppClientId = context.Variables["APIMAADRegisteredAppClientId"];
+                            var _AADRegisteredAppClientSecret = context.Variables["APIMAADRegisteredAppClientSecret"];
                             var _AADSAPResource = context.Variables["AADSAPResource"];
                             var assertion = context.Request.Headers.GetValueOrDefault("Authorization","").Replace("Bearer ","");
                             return $"grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={assertion}&client_id={_AADRegisteredAppClientId}&client_secret={_AADRegisteredAppClientSecret}&resource={_AADSAPResource}&requested_token_use=on_behalf_of&requested_token_type=urn:ietf:params:oauth:token-type:saml2";

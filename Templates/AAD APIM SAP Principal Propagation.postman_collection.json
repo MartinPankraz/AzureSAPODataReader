@@ -11,7 +11,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "https://login.microsoftonline.com/{{AAD tenant ID}}/oauth2/v2.0/authorize?client_id={{Web App Client ID}}&response_type=token&redirect_uri=https://localhost:44326/signin-oidc&scope=openid profile api://{{Web App Client ID}}/user_impersonation&response_mode=fragment",
+					"raw": "https://login.microsoftonline.com/{{AAD tenant ID}}/oauth2/v2.0/authorize?client_id={{Frontend App Client Id}}&response_type=token&redirect_uri=https://localhost:44326/signin-oidc&scope=openid profile api://{{APIM middle tier client ID}}/user_impersonation&response_mode=fragment",
 					"protocol": "https",
 					"host": [
 						"login",
@@ -27,7 +27,7 @@
 					"query": [
 						{
 							"key": "client_id",
-							"value": "{{Web App Client ID}}"
+							"value": "{{Frontend App Client Id}}"
 						},
 						{
 							"key": "response_type",
@@ -39,7 +39,8 @@
 						},
 						{
 							"key": "scope",
-							"value": "openid profile api://{{Web App Client ID}}/user_impersonation"
+							"value": "openid profile api://{{APIM middle tier client ID}}/user_impersonation",
+							"description": "Scope for API Management app for requesting FrontEnd app (shared component)"
 						},
 						{
 							"key": "response_mode",
@@ -102,12 +103,12 @@
 						},
 						{
 							"key": "client_id",
-							"value": "{{Web App Client ID}}",
+							"value": "{{APIM middle tier client ID}}",
 							"type": "text"
 						},
 						{
 							"key": "client_secret",
-							"value": "{{Web App Client Secret}}",
+							"value": "{{APIM middle tier client secret}}",
 							"type": "text"
 						},
 						{
@@ -304,13 +305,13 @@
 		}
 	],
 	"variable": [
-		{		
-			"key": "Web App Client ID",
-			"value": "<<your AAD client app registration id>>"
+		{
+			"key": "APIM middle tier client ID",
+			"value": "<<your APIM AAD client app registration id>>"
 		},
 		{
-			"key": "Web App Client Secret",
-			"value": "<<your AAD client app secret>>"
+			"key": "APIM middle tier client secret",
+			"value": "<<your APIM AAD client app registration secret>>"
 		},
 		{
 			"key": "AAD tenant ID",
@@ -343,6 +344,14 @@
 		{
 			"key": "Ocp-Apim-Subscription-Key",
 			"value": "<<your Ocp-Apim-Subscription-Key>>"
+		},
+		{
+			"key": "Frontend App Client Id",
+			"value": "<<your Frontend AAD client app registration id>>"
+		},
+		{
+			"key": "Frontend App Client Secret",
+			"value": "<<your Frontend AAD client app registration secret>>"
 		}
 	]
 }
