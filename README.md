@@ -9,7 +9,7 @@ As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod
 
 We assume you want to run the APIM instance centrally to expose SAP OData services to multiple interested parties. For a fully decoupled design we need to register each component individually with Azure AD. Our provided [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) takes care of the SAP Pricipal Propagation complexity. Consumer apps only need to provide the required scope and be allowed on AAD to authenticate against the middle tier app registration.
 
-![App Registration Overview](/AAD-App-Registration-view.png)
+![App Registration Overview](/AAD-App-Registration-overview.png)
 
 ## Azure API Management Config
 In case you are running your APIM instance in a private VNet you need to configure certain [network security group rules](https://docs.microsoft.com/en-us/azure/api-management/api-management-using-with-vnet?tabs=stv2#network-configuration) on your subnet, so it can reach the required Azure PaaS services.
