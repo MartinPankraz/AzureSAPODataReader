@@ -57,5 +57,10 @@ SAP OData services are protected by CSRF tokens usually.
 
 For further reading on csrf-token handling for SAP with APIM policy, have a look at this [example](https://docs.microsoft.com/en-us/azure/api-management/policies/get-x-csrf-token-from-sap-gateway).
 
+### Troubleshooting hints
+- Leverage [Postman collection](Templates/AAD_APIM_SAP_Principal_Propagation.postman_collection.json) to check each step and see meaningful error message outputs
+- Use SAP backend transaction __SEC_DIAG_TOOLS__ to trace SAML issues
+- Use [Azure APIM policy debugger in VS Code](https://docs.microsoft.com/en-us/azure/api-management/api-management-debug-policies). Retrieve the Bearer token through Postman for instance and feed it into the debugger. That enables step by step debugging of each step in the policy
+
 ## Thoughts on OData result chaching in APIM
 One of the strengths of distributed APIM solutions is the capability to cache seldomnly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the chaches results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
