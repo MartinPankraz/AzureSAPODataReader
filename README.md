@@ -7,7 +7,7 @@ As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod
 
 ![Overview Architecture](/overview-architecture.png)
 
-We assume you want to run the APIM instance centrally to expose SAP OData services to multiple interested parties. For a fully decoupled design we need to register each component individually with Azure AD. Our provided [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) takes care of the SAP Pricipal Propagation complexity. Consumer apps only need to provide the required scope and be allowed on AAD to authenticate against the middle tier app registration.
+We assume you want to run the APIM instance centrally to expose SAP OData services to multiple interested parties. For a fully decoupled design we need to register each component individually with Azure AD. Our provided [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) takes care of the SAP Pricipal Propagation complexity. Consumer apps only need to provide the required scope and be allowed on AAD to authenticate against the middle tier app registration. We add the OData verb $format to force JSON output. Clients like Microsoft PowerPlatform work with JSON only. Consider dropping it from the policy in case you need XML as output format.
 
 ![App Registration Overview](/AAD-App-Registration-overview.png)
 
