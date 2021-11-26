@@ -98,7 +98,7 @@
 						},
 						{
 							"key": "assertion",
-							"value": "",
+							"value": "<<<access token from initial login call>>>",
 							"type": "text"
 						},
 						{
@@ -146,6 +146,101 @@
 			"response": []
 		},
 		{
+			"name": "Request SAML assertion from AAD with ObO flow v2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    if (pm.environment.get(\"Web App Client ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *Web App Client ID* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"Web App Client Secret\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *Web App Client Secret* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"AAD tenant ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *AAD tenant ID* environment variable first.\");\r",
+							"    }\r",
+							"    else\r",
+							"    {\r",
+							"        var json = JSON.parse(responseBody);\r",
+							"        pm.collectionVariables.set(\"bearerToken\", json.access_token);\r",
+							"    }\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+							"type": "text"
+						},
+						{
+							"key": "assertion",
+							"value": "<<<access token from initial login call>>>",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{APIM middle tier client ID}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{APIM middle tier client secret}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "spn:{{AAD App registration resource}}/.default",
+							"type": "text"
+						},
+						{
+							"key": "requested_token_use",
+							"value": "on_behalf_of",
+							"type": "text"
+						},
+						{
+							"key": "requested_token_type",
+							"value": "urn:ietf:params:oauth:token-type:saml2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{AAD tenant ID}}/oauth2/v2.0/token",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{AAD tenant ID}}",
+						"oauth2",
+						"v2.0",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Request access token from SAP backend with SAML Bearer Grant Type (RFC 7522)",
 			"event": [
 				{
@@ -181,7 +276,7 @@
 					"basic": [
 						{
 							"key": "password",
-							"value": "",
+							"value": "Init1234#",
 							"type": "string"
 						},
 						{
