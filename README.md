@@ -38,7 +38,6 @@ Find more policy snippets and expression cheatsheets on our [Azure Examples Repo
 
 ## .NET Frontend Project setup
 For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring. Depending on your caching choice you will need to drop parts of the client-side config.
-=======
 
 In addition to that there is a Postman collection with the relevant calls to check your setup. You need to configure the variables for that particular collection to start testing. Please note that the initial AAD login relies on the fragment concept explained by Martin Raepple in his [blog series](https://blogs.sap.com/2020/07/17/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-cloud-platform-scp/) (step 48) on the wider topic. This is necessary to be able to test from Postman only. The dotnet project does this natively from MSAL.
 
@@ -47,7 +46,7 @@ Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in 
 ## Authentication considerations
 ### Client-side vs. APIM caching for SAP Principal Propagation
 You can either do this with client-side caching from the [.NET code](Controllers/HomeController.cs) or leverage our [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml). We recommend the latter, because it solves SAP Principal Propagation for all clients and lifts the burden for each client to implement the multi-OAuth sequence of calls for the OAuth2SAMLBearerAssertion flow. 
-=======
+
 - This project leverages code based configuration with Azure Active Directory leveraging both the "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" libraries.
 - In order to speed up and streamline the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play. Moving this token acquisition call logic into APIM deprives you of the capability of caching the tokens due to the stateless nature of the setup.
 
