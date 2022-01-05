@@ -1,5 +1,5 @@
 # AzureSAPODataReader
-A dotnet 5 web project to showcase integration of Azure AD with Azure API Management for SAP OData consumption leveraging Principal Propagation. Have a look at Martin Raepple's [post series](https://blogs.sap.com/2021/04/13/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-business-technology-platform-btp-part-iv-sso-with-a-power-virtual-agent-chatbot-and-on-premises-data-gateway/) for more insights in SAP Principal Propagation.
+A dotnet 5 web project to showcase integration of Azure AD with Azure API Management for SAP OData consumption leveraging Principal Propagation. Have a look at Martin Raepple's [post series](https://blogs.sap.com/2021/04/13/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-business-technology-platform-btp-part-iv-sso-with-a-power-virtual-agent-chatbot-and-on-premises-data-gateway/) for more insights on SAP Principal Propagation.
 
 Find my associated blog post on the SAP Community [here](https://blogs.sap.com/2021/08/12/.net-speaks-odata-too-how-to-implement-azure-app-service-with-sap-odata-gateway/).
 
@@ -25,7 +25,7 @@ Once APIM is provisioned and setup you can continue with the SAP OData specific 
 8. Add GET Operation `/` including the inbound policy `<rewrite-uri template="/" copy-unmatched-params="true" />`. That ensures the OData collection service on SAP is treated correctly without redirects.
 9. Test the $metadata api call to verify connectivity from Azure APIM to your SAP backend
 
-In case your SAP backend uses a self-signed certificate consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
+In case your SAP backend uses a self-signed certificate you may need to consider disabling the verification of the trust chain for SSL. To do so maintain an entry under APIs -> Backends -> Add -> Custom URL -> Uncheck Validate certificate chain and name. For productive usage it would be recommended to use proper certificates for end-to-end SSL verification.
 
 SKIP steps 10-13 if you want to rely on client-side caching or implement SAP Principal Propagation at a later stage. We highly recommend using the APIM policy over the client-side approach though. See section `Authentication considerations` for more details.
 
@@ -38,17 +38,18 @@ Find more policy snippets and expression cheatsheets on our [Azure Examples Repo
 
 ## .NET Frontend Project setup
 For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring. Depending on your caching choice you will need to drop parts of the client-side config.
+=======
 
 In addition to that there is a Postman collection with the relevant calls to check your setup. You need to configure the variables for that particular collection to start testing. Please note that the initial AAD login relies on the fragment concept explained by Martin Raepple in his [blog series](https://blogs.sap.com/2020/07/17/principal-propagation-in-a-multi-cloud-solution-between-microsoft-azure-and-sap-cloud-platform-scp/) (step 48) on the wider topic. This is necessary to be able to test from Postman only. The dotnet project does this natively from MSAL.
 
 Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in all-access subscription -> ... -> Show Primary Key
 
 ## Authentication considerations
-- This project uses code based configuration with AAD leveraging "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" library.
-- In order to speed up and stream line the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP.
-
 ### Client-side vs. APIM caching for SAP Principal Propagation
 You can either do this with client-side caching from the [.NET code](Controllers/HomeController.cs) or leverage our [APIM policy](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml). We recommend the latter, because it solves SAP Principal Propagation for all clients and lifts the burden for each client to implement the multi-OAuth sequence of calls for the OAuth2SAMLBearerAssertion flow. 
+=======
+- This project leverages code based configuration with Azure Active Directory leveraging both the "Microsoft.AspNetCore.Authentication" and "Microsoft.Identity.Web" libraries.
+- In order to speed up and streamline the handling of the different tokens required for SAP Principal Propagation we implemented a token cache. The MSAL built-in one stores the Azure AD related ones on first login but has no knowledge of the subsequent calls to SAP. For that the custom token cache comes into play. Moving this token acquisition call logic into APIM deprives you of the capability of caching the tokens due to the stateless nature of the setup.
 
 ### X-CSRF-Token handling
 SAP OData services are protected by CSRF tokens usually.
@@ -64,5 +65,5 @@ For further reading on csrf-token handling for SAP with APIM policy, have a look
 - Use SAP backend transaction __SEC_DIAG_TOOLS__ to trace Principal Propagation issues
 - Use [Azure APIM policy debugger in VS Code](https://docs.microsoft.com/en-us/azure/api-management/api-management-debug-policies). Retrieve the Bearer token through Postman for instance and feed it into the debugger. That enables step by step debugging of each step in the policy
 
-## Thoughts on OData result chaching in APIM
-One of the strengths of distributed APIM solutions is the capability to cache seldomnly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the caches results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
+## Thoughts on OData result caching in APIM
+One of the strengths of distributed APIM solutions is the capability to cache seldomly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the cached results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
