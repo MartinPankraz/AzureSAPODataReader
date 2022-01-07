@@ -28,6 +28,11 @@
             <issuers>
                 <issuer>https://sts.windows.net/{{AADTenantId}}/</issuer>
             </issuers>
+            <required-claims>
+                <claim name="scp" match="all" separator=" ">
+                    <value>user_impersonation</value>
+                </claim>
+            </required-claims>
         </validate-jwt>
         <set-variable name="APIMAADRegisteredAppClientId" value="{{APIMAADRegisteredAppClientId}}" />
         <set-variable name="APIMAADRegisteredAppClientSecret" value="{{APIMAADRegisteredAppClientSecret}}" />
@@ -90,9 +95,9 @@
                 <!-- take random time off the actual expiry to avoid login bursts (clustered expired tokens). Assuming a third of the total expiry as lower boundary -->
                 <set-variable name="RandomBackOffDelay" value="@(new Random().Next(int.Parse((string)context.Variables["SAPBearerTokenExpiry"])/3,int.Parse((string)context.Variables["SAPBearerTokenExpiry"])))" />
                 <!--cache Bearer and refresh token till expiry. We recommend 36 hours to mitigate "morning" login bursts efficiently. -->
-                <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" />
+                <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@((int)context.Variables["SAPBearerTokenExpiry"] - (int)context.Variables["RandomBackOffDelay"])" />
                 <!-- verify refresh token expiry on SOAUTH2 transaction at SAP backend. We assume long lifetime and assign 10 times more by default. -->
-                <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" />
+                <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@((int)context.Variables["SAPOAuthRefreshExpiry"] - (int)context.Variables["RandomBackOffDelay"])" />
             </when>
             <!-- if no SAP bearer token is available but a valid refresh token is present, use it to get a new bearer token -->
             <when condition="@(!context.Variables.ContainsKey("SAPBearerToken") && context.Variables.ContainsKey("SAPRefreshToken"))">
@@ -127,12 +132,11 @@
                 <!-- take random time off the actual expiry to avoid login bursts (clustered expired tokens). Assuming a third of the total expiry as lower boundary -->
                 <set-variable name="RandomBackOffDelay" value="@(new Random().Next(int.Parse((string)context.Variables["SAPBearerTokenExpiry"])/3,int.Parse((string)context.Variables["SAPBearerTokenExpiry"])))" />
                 <!--cache Bearer and refresh token till expiry. We recommend 36 hours to mitigate "morning" login bursts efficiently. -->
-                <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" />
+                <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@((int)context.Variables["SAPBearerTokenExpiry"] - (int)context.Variables["RandomBackOffDelay"])" />
                 <!-- optionally store duration for diagnostics endpoint
                 <cache-store-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" duration="3600" />-->
-
                 <!-- verify refresh token expiry on SOAUTH2 transaction at SAP backend. We assume long lifetime and assign 10 times more by default. -->
-                <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" />
+                <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@((int)context.Variables["SAPOAuthRefreshExpiry"] - (int)context.Variables["RandomBackOffDelay"])" />
                 <!-- optionally store duration for diagnostics endpoint
                 <cache-store-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" duration="3600" />-->
             </when>
@@ -158,7 +162,7 @@
                 <set-header name="X-CSRF-Token" exists-action="override">
                     <value>@(((IResponse)context.Variables["SAPCSRFToken"]).Headers.GetValueOrDefault("x-csrf-token"))</value>
                 </set-header>
-                <set-header name="Cookie" exists-action="override"><!-- consider override or append -->
+                <set-header name="Cookie" exists-action="override">
                     <value>@{
 						string rawcookie = ((IResponse)context.Variables["SAPCSRFToken"]).Headers.GetValueOrDefault("Set-Cookie");
 						string[] cookies = rawcookie.Split(';');
