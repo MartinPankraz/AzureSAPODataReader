@@ -7,6 +7,17 @@
 	"item": [
 		{
 			"name": "Web App Login to obtain Access Token from AAD",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -52,7 +63,100 @@
 			"response": []
 		},
 		{
-			"name": "Request SAML assertion from AAD with ObO flow",
+			"name": "Obtain Access Token from AAD for service principal",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    var json = JSON.parse(responseBody);\r",
+							"    pm.collectionVariables.set(\"AADBearerToken\", json.access_token);\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{Frontend App Client Secret}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{Frontend App Client Id}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "openid profile api://{{APIM middle tier client ID}}/.default",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{AAD tenant ID}}/oauth2/v2.0/token",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{AAD tenant ID}}",
+						"oauth2",
+						"v2.0",
+						"token"
+					],
+					"query": [
+						{
+							"key": "response_type",
+							"value": "token",
+							"disabled": true
+						},
+						{
+							"key": "redirect_uri",
+							"value": "https://localhost:44326/signin-oidc",
+							"disabled": true
+						},
+						{
+							"key": "scope",
+							"value": "openid profile api://{{APIM middle tier client ID}}/user_impersonation",
+							"description": "Scope for API Management app for requesting FrontEnd app (shared component)",
+							"disabled": true
+						},
+						{
+							"key": "response_mode",
+							"value": "fragment",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DEPRECATED Request SAML assertion from AAD with ObO flow",
 			"event": [
 				{
 					"listen": "test",
@@ -98,7 +202,8 @@
 						},
 						{
 							"key": "assertion",
-							"value": "<<<access token from initial login call>>>",
+							"value": "{{AADBearerToken}}",
+							"description": "replace with assertion if user based flow is used instead of app registration (service principal use case)",
 							"type": "text"
 						},
 						{
@@ -192,7 +297,7 @@
 						},
 						{
 							"key": "assertion",
-							"value": "<<<access token from initial login call>>>",
+							"value": "",
 							"type": "text"
 						},
 						{
@@ -260,6 +365,7 @@
 							"    {\r",
 							"        var json = JSON.parse(responseBody);\r",
 							"        pm.collectionVariables.set(\"SAPBearerToken\", json.access_token);\r",
+							"        pm.collectionVariables.set(\"refreshToken\", json.refresh_token);\r",
 							"    }\r",
 							"}\r",
 							"catch (e) {\r",
@@ -276,7 +382,7 @@
 					"basic": [
 						{
 							"key": "password",
-							"value": "Init1234#",
+							"value": "{{SAP OAuth Client Pwd}}",
 							"type": "string"
 						},
 						{
@@ -292,6 +398,12 @@
 						"key": "Ocp-Apim-Subscription-Key",
 						"value": "{{Ocp-Apim-Subscription-Key}}",
 						"type": "text"
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"type": "default",
+						"disabled": true
 					}
 				],
 				"body": {
@@ -336,7 +448,102 @@
 			"response": []
 		},
 		{
-			"name": "Call ODat backend service on SAP via APIM",
+			"name": "Refresh token from SAP backend with Bearer token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    if (pm.environment.get(\"SAP OAuth Client ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *SAP OAuth Client ID* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"SAP OAuth Scope\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *SAP OAuth Scope* environment variable first.\");\r",
+							"    }\r",
+							"    else\r",
+							"    {\r",
+							"        var json = JSON.parse(responseBody);\r",
+							"        pm.collectionVariables.set(\"SAPBearerToken\", json.access_token);\r",
+							"    }\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{SAP OAuth Client Pwd}}#",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{SAP OAuth Client ID}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "refresh_token",
+							"type": "text"
+						},
+						{
+							"key": "refresh_token",
+							"value": "{{refreshToken}}",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{SAP OAuth Client ID}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "{{SAP OAuth Scope}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://{{Azure APIM Domain}}.azure-api.net/oauth2/token",
+					"protocol": "https",
+					"host": [
+						"{{Azure APIM Domain}}",
+						"azure-api",
+						"net"
+					],
+					"path": [
+						"oauth2",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Call OData backend service on SAP via APIM",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -354,6 +561,12 @@
 						"key": "Ocp-Apim-Subscription-Key",
 						"value": "{{Ocp-Apim-Subscription-Key}}",
 						"type": "text"
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"type": "default",
+						"disabled": true
 					}
 				],
 				"url": {
@@ -372,6 +585,65 @@
 						{
 							"key": "$top",
 							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Call OData backend service via VPN",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{SAPBearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"type": "text"
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"type": "default",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://<<your sap ip>>:<<your sap ssl port>>/sap/opu/odata/sap/epm_ref_apps_prod_man_srv/Products?$top=10&$format=json",
+					"protocol": "https",
+					"host": [
+						"10",
+						"250",
+						"60",
+						"7"
+					],
+					"port": "44321",
+					"path": [
+						"sap",
+						"opu",
+						"odata",
+						"sap",
+						"epm_ref_apps_prod_man_srv",
+						"Products"
+					],
+					"query": [
+						{
+							"key": "$top",
+							"value": "10"
+						},
+						{
+							"key": "$format",
+							"value": "json"
 						}
 					]
 				}
@@ -418,7 +690,11 @@
 		},
 		{
 			"key": "SAP OAuth Client ID",
-			"value": "<<your SAP OAuth Client ID>>"
+			"value": "<<your SAP OAuth Client ID registered in SOAUTH2>>"
+		},
+		{
+			"key": "SAP OAuth Client Pwd",
+			"value": "<<your SAP OAuth Client User password. Look up/assign in transaction SU01>>"
 		},
 		{
 			"key": "SAP OAuth Scope",
@@ -447,6 +723,14 @@
 		{
 			"key": "Frontend App Client Secret",
 			"value": "<<your Frontend AAD client app registration secret>>"
+		},
+		{
+			"key": "refreshToken",
+			"value": ""
+		},
+		{
+			"key": "AADBearerToken",
+			"value": "<<only used if service principal request used (instead of user based flow)>>"
 		}
 	]
 }

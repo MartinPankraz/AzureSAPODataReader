@@ -9,6 +9,7 @@ export SAPOAuthClientID="<your SAP OAuth client id (check TC OAUTH2)>"
 export SAPOAuthClientSecret="<your SAP Oauth client secret (check TC OAUTH2)>"
 export SAPOAuthScope="<your SAP OAuth Scope (check TC OAUTH2)>"
 export SAPOAuthServerAdressForTokenEndpoint="<ip or domain>:<SAP backend ssl port>"
+export SAPOAuthRefreshExpiry="<refresh token expiry in seconds (take from SOAUTH2 transaction)>"
 
 az apim nv create --display-name 'AADTenantId' --named-value-id AADTenantId -g $resourceGroup --service-name $APIMserviceName --secret false --subscription $AzureSubscription --value $AADTenantId
 
@@ -25,3 +26,5 @@ az apim nv create --display-name 'SAPOAuthClientSecret' --named-value-id SAPOAut
 az apim nv create --display-name 'SAPOAuthScope' --named-value-id SAPOAuthScope -g $resourceGroup --service-name $APIMserviceName --secret false --subscription $AzureSubscription --value $SAPOAuthScope
 
 az apim nv create --display-name 'SAPOAuthServerAdressForTokenEndpoint' --named-value-id SAPOAuthServerAdressForTokenEndpoint -g $resourceGroup --service-name $APIMserviceName --secret false --subscription $AzureSubscription --value $SAPOAuthServerAdressForTokenEndpoint
+
+az apim nv create --display-name 'SAPOAuthRefreshExpiry' --named-value-id SAPOAuthRefreshExpiry -g $resourceGroup --service-name $APIMserviceName --secret false --subscription $AzureSubscription --value $SAPOAuthRefreshExpiry
