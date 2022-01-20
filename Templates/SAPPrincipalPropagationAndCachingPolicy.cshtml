@@ -178,7 +178,7 @@
         <set-header name="Ocp-Apim-Subscription-Key" exists-action="delete" />
         <choose>
             <!--introduce json format conversion only for non-metadata calls and only for GET operations. Otherwise bad request.-->
-            <when condition="@(context.Operation.Name != "$metadata" && context.Request.Method == "GET")">
+            <when condition="@(!context.Request.Url.Path.Contains("/$metadata") && context.Request.Method == "GET")">
                 <set-query-parameter name="$format" exists-action="override">
                     <value>json</value>
                 </set-query-parameter>
