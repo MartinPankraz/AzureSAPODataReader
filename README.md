@@ -81,6 +81,7 @@ For further reading on csrf-token handling for SAP with APIM policy, have a look
 - Use SAP backend transaction __SEC_DIAG_TOOLS__ to trace Principal Propagation issues using the OAuth Client user name.
 - Use [Azure APIM policy debugger in VS Code](https://docs.microsoft.com/azure/api-management/api-management-debug-policies). Retrieve the Bearer token through Postman for instance and feed it into the debugger. That enables step by step debugging of each step in the policy. Highly recommend this for sophisticated troubleshooting.
 - Create a diagnostic endpoint to read your APIM cache to check on the tokens by user. Have a look at our [template](Templates/APIMScanCachePolicy.cshtml) to get started.
+- The SAP Refresh token is valid only once! If you use it from Postman but still have it cached in your APIM instance, your cache is broken. Consider overriding or make a "fresh" oauth call.
 
 ## Thoughts on OData result caching in APIM
 

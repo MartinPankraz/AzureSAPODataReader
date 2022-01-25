@@ -94,11 +94,15 @@
                 <set-variable name="SAPBearerToken" value="@(((JObject)context.Variables["SAPResponseObject"])["access_token"].ToString())" />
                 <set-variable name="SAPRefreshToken" value="@(((JObject)context.Variables["SAPResponseObject"])["refresh_token"].ToString())" />
                 <!-- take random time off the actual expiry to avoid login bursts (clustered expired tokens). Assuming a third of the total expiry as lower boundary -->
-                <set-variable name="RandomBackOffDelay" value="@(new Random().Next((int)context.Variables["iSAPBearerTokenExpiry"]/3,(int)context.Variables["iSAPBearerTokenExpiry"]))" />
+                <set-variable name="RandomBackOffDelay" value="@(new Random().Next(0,(int)context.Variables["iSAPBearerTokenExpiry"]/3))" />
                 <!--cache Bearer and refresh token till expiry. We recommend 36 hours to mitigate "morning" login bursts efficiently. -->
                 <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@((int)context.Variables["iSAPBearerTokenExpiry"]  - (int)context.Variables["RandomBackOffDelay"])" />
+                <!-- optionally store duration for diagnostics endpoint
+                <cache-store-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((int)context.Variables["iSAPBearerTokenExpiry"] - (int)context.Variables["RandomBackOffDelay"])" duration="3600" />-->
                 <!-- verify refresh token expiry on SOAUTH2 transaction at SAP backend. We assume long lifetime and assign 10 times more by default. -->
                 <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - (int)context.Variables["RandomBackOffDelay"])" />
+                <!-- optionally store duration for diagnostics endpoint
+                <cache-store-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - (int)context.Variables["RandomBackOffDelay"])" duration="3600" />-->
             </when>
             <!-- if no SAP bearer token is available but a valid refresh token is present, use it to get a new bearer token -->
             <when condition="@(!context.Variables.ContainsKey("SAPBearerToken") && context.Variables.ContainsKey("SAPRefreshToken"))">
@@ -125,22 +129,22 @@
                             return $"grant_type=refresh_token&refresh_token={_refreshToken}&client_id={_SAPOAuthClientID}&scope={_SAPOAuthScope}";
                         }</set-body>
                 </send-request>
-                <!-- Remember SAP Bearer tokens -->
+                <!-- Remember SAP Bearer tokens. Consider handling http 400 Bad Request for invalid Refresh tokens -->
                 <set-variable name="SAPRefreshedResponseObject" value="@(((IResponse)context.Variables["fetchrefreshedSAPBearer"]).Body.As<JObject>())" />
                 <set-variable name="SAPBearerTokenExpiry" value="@(((JObject)context.Variables["SAPRefreshedResponseObject"])["expires_in"].ToString())" />
                 <set-variable name="iSAPBearerTokenExpiry" value="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]))" />
                 <set-variable name="SAPBearerToken" value="@(((JObject)context.Variables["SAPRefreshedResponseObject"])["access_token"].ToString())" />
                 <set-variable name="SAPRefreshToken" value="@(((JObject)context.Variables["SAPRefreshedResponseObject"])["refresh_token"].ToString())" />
                 <!-- take random time off the actual expiry to avoid login bursts (clustered expired tokens). Assuming a third of the total expiry as lower boundary -->
-                <set-variable name="RandomBackOffDelay" value="@(new Random().Next((int)context.Variables["iSAPBearerTokenExpiry"]/3,(int)context.Variables["iSAPBearerTokenExpiry"]))" />
+                <set-variable name="RandomBackOffDelay" value="@(new Random().Next(0,(int)context.Variables["iSAPBearerTokenExpiry"]/3))" />
                 <!--cache Bearer and refresh token till expiry. We recommend 36 hours to mitigate "morning" login bursts efficiently. -->
                 <cache-store-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPBearerToken"])" duration="@((int)context.Variables["iSAPBearerTokenExpiry"] - (int)context.Variables["RandomBackOffDelay"])" />
                 <!-- optionally store duration for diagnostics endpoint
-                <cache-store-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPBearerTokenExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" duration="3600" />-->
+                <cache-store-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((int)context.Variables["iSAPBearerTokenExpiry"] - (int)context.Variables["RandomBackOffDelay"])" duration="3600" />-->
                 <!-- verify refresh token expiry on SOAUTH2 transaction at SAP backend. We assume long lifetime and assign 10 times more by default. -->
                 <cache-store-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@((string)context.Variables["SAPRefreshToken"])" duration="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - (int)context.Variables["RandomBackOffDelay"])" />
-                <!-- optionally store duration for diagnostics endpoint
-                <cache-store-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - int.Parse((string)context.Variables["RandomBackOffDelay"]))" duration="3600" />-->
+                <!-- optionally store duration for diagnostics endpoint 
+                <cache-store-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" value="@(int.Parse((string)context.Variables["SAPOAuthRefreshExpiry"]) - (int)context.Variables["RandomBackOffDelay"])" duration="3600" />-->
             </when>
         </choose>
         <!-- check CSRF -->

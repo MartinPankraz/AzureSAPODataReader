@@ -5,26 +5,30 @@
     <inbound>
         <!-- check APIM cache for existing user SAP token for OData service -->
         <cache-lookup-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerToken" />
-        <!--<cache-lookup-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerDuration" />-->
+        <cache-lookup-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerDuration" />
         <cache-lookup-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshToken" />
-        <!--<cache-lookup-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshDuration" />-->
+        <cache-lookup-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshDuration" />
         <choose>
             <when condition="@(!context.Variables.ContainsKey("SAPBearerToken"))">
-                <set-variable name="PersistedSAPBearerToken" value="bearer cache empty" />
+                <set-variable name="SAPBearerToken" value="bearer cache empty" />
                 <set-variable name="SAPBearerDuration" value="0" />
             </when>
-            <otherwise>
-                <set-variable name="PersistedSAPBearerToken" value="@((string)context.Variables["SAPBearerToken"])" />
-            </otherwise>
+        </choose>
+        <choose>
+            <when condition="@(!context.Variables.ContainsKey("SAPBearerDuration"))">
+                <set-variable name="SAPBearerDuration" value="0" />
+            </when>
         </choose>
         <choose>
             <when condition="@(!context.Variables.ContainsKey("SAPRefreshToken"))">
-                <set-variable name="PersistedSAPRefreshToken" value="refresh token cache empty" />
+                <set-variable name="SAPRefreshToken" value="refresh token cache empty" />
                 <set-variable name="SAPRefreshDuration" value="0" />
             </when>
-            <otherwise>
-                <set-variable name="PersistedSAPRefreshToken" value="@((string)context.Variables["SAPRefreshToken"])" />
-            </otherwise>
+        </choose>
+        <choose>
+            <when condition="@(!context.Variables.ContainsKey("SAPRefreshDuration"))">
+                <set-variable name="SAPRefreshDuration" value="0" />
+            </when>
         </choose>
     </inbound>
     <backend />
@@ -33,8 +37,8 @@
             <value>text/plain</value>
         </set-header>
         <set-body template="none">@{
-                //return context.Variables["PersistedSAPBearerToken"] + " | " + context.Variables["SAPBearerDuration"] + "ms | " +context.Variables["PersistedSAPRefreshToken"] + " | " + context.Variables["SAPRefreshDuration"] + "ms";
-                return "bearer:" + context.Variables["PersistedSAPBearerToken"] + " | refresh:" + context.Variables["PersistedSAPRefreshToken"];
+                return context.Variables["SAPBearerToken"] + " | " + context.Variables["SAPBearerDuration"] + "s | " +context.Variables["SAPRefreshToken"] + " | " + context.Variables["SAPRefreshDuration"] + "s";
+                //return "bearer:" + context.Variables["SAPBearerToken"] + " | refresh:" + context.Variables["SAPRefreshToken"];
             }</set-body>
     </outbound>
     <on-error />
