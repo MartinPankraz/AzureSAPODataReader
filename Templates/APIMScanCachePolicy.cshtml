@@ -1,0 +1,41 @@
+<!-- The policy defined assumes implementation of the provided SAP Principal Propagation policy: https://github.com/MartinPankraz/AzureSAPODataReader/blob/master/Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml -->
+<!-- Furthermore it shows how to inspect the APIM cache for tokens for a specified user using his Bearer token. -->
+<!-- This is useful to check if your caching approach works as expected and to verify expiry times (uncomment relevant sections in policies to activate) -->
+<policies>
+    <inbound>
+        <!-- check APIM cache for existing user SAP token for OData service -->
+        <cache-lookup-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerToken" />
+        <!--<cache-lookup-value key="@("SAPBearerDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPBearerDuration" />-->
+        <cache-lookup-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshToken" />
+        <!--<cache-lookup-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshDuration" />-->
+        <choose>
+            <when condition="@(!context.Variables.ContainsKey("SAPBearerToken"))">
+                <set-variable name="PersistedSAPBearerToken" value="bearer cache empty" />
+                <set-variable name="SAPBearerDuration" value="0" />
+            </when>
+            <otherwise>
+                <set-variable name="PersistedSAPBearerToken" value="@((string)context.Variables["SAPBearerToken"])" />
+            </otherwise>
+        </choose>
+        <choose>
+            <when condition="@(!context.Variables.ContainsKey("SAPRefreshToken"))">
+                <set-variable name="PersistedSAPRefreshToken" value="refresh token cache empty" />
+                <set-variable name="SAPRefreshDuration" value="0" />
+            </when>
+            <otherwise>
+                <set-variable name="PersistedSAPRefreshToken" value="@((string)context.Variables["SAPRefreshToken"])" />
+            </otherwise>
+        </choose>
+    </inbound>
+    <backend />
+    <outbound>
+        <set-header name="Content-Type" exists-action="override">
+            <value>text/plain</value>
+        </set-header>
+        <set-body template="none">@{
+                //return context.Variables["PersistedSAPBearerToken"] + " | " + context.Variables["SAPBearerDuration"] + "ms | " +context.Variables["PersistedSAPRefreshToken"] + " | " + context.Variables["SAPRefreshDuration"] + "ms";
+                return "bearer:" + context.Variables["PersistedSAPBearerToken"] + " | refresh:" + context.Variables["PersistedSAPRefreshToken"];
+            }</set-body>
+    </outbound>
+    <on-error />
+</policies>

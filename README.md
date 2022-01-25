@@ -74,12 +74,13 @@ For further reading on csrf-token handling for SAP with APIM policy, have a look
 
 ### Troubleshooting hints
 
-- Verify generated OpenAPI spec with [swagger.io](https://editor.swagger.io/)
+- Verify generated OpenAPI spec with [swagger.io](https://editor.swagger.io/) if you have APIM import issues. For instance, we ran into issues with non-unique names for cross OData service references with the TripPinRESTTierService example service for v4 provided by [service.odata.org](https://services.odata.org/TripPinRESTierService/$metadata).
 - Leverage [Postman collection](Templates/AAD_APIM_SAP_Principal_Propagation.postman_collection.json) to check each step and see meaningful error message outputs
 - Configure [LogAnalytics/Application Insights for APIM](https://docs.microsoft.com/azure/api-management/api-management-howto-use-azure-monitor#resource-logs)
 - Alternatively consider adding a SendRequest to your policy and forward relevant info to a RequestBin like [PipeDream](https://pipedream.com/) in case you are not familiar with Azure Log Analytics.
-- Use SAP backend transaction __SEC_DIAG_TOOLS__ to trace Principal Propagation issues
-- Use [Azure APIM policy debugger in VS Code](https://docs.microsoft.com/azure/api-management/api-management-debug-policies). Retrieve the Bearer token through Postman for instance and feed it into the debugger. That enables step by step debugging of each step in the policy
+- Use SAP backend transaction __SEC_DIAG_TOOLS__ to trace Principal Propagation issues using the OAuth Client user name.
+- Use [Azure APIM policy debugger in VS Code](https://docs.microsoft.com/azure/api-management/api-management-debug-policies). Retrieve the Bearer token through Postman for instance and feed it into the debugger. That enables step by step debugging of each step in the policy. Highly recommend this for sophisticated troubleshooting.
+- Create a diagnostic endpoint to read your APIM cache to check on the tokens by user. Have a look at our [template](Templates/APIMScanCachePolicy.cshtml) to get started.
 
 ## Thoughts on OData result caching in APIM
 
