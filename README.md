@@ -72,7 +72,11 @@ SAP OData services are protected by CSRF tokens usually.
 
 For further reading on csrf-token handling for SAP with APIM policy, have a look at this [template](Templates/SAPXCSRFTokenPolicy.cshtml) on our repos.
 
-### Troubleshooting hints
+## If-Match header and ETags
+
+Be aware that some OData operations like PATCH require the [If-Match header](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-odata/c3569037-0557-4769-8f75-a91ffcd7b05b) containing your [ETag](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-odata/c4d715eb-10f6-47fa-9ccc-2ebf926558a6) value to ensure concurrent operations are executed in anticipated order. The provided APIM policy does not cover that by design. Your client needs to feed the ETag and If-Match header accordingly.
+
+## Troubleshooting hints
 
 - Verify generated OpenAPI spec with [swagger.io](https://editor.swagger.io/) if you have APIM import issues. For instance, we ran into issues with non-unique names for cross OData service references with the TripPinRESTTierService example service for v4 provided by [service.odata.org](https://services.odata.org/TripPinRESTierService/$metadata).
 - Leverage [Postman collection](Templates/AAD_APIM_SAP_Principal_Propagation.postman_collection.json) to check each step and see meaningful error message outputs
