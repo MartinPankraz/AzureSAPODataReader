@@ -90,3 +90,7 @@ Be aware that some OData operations like PATCH require the [If-Match header](htt
 ## Thoughts on OData result caching in APIM
 
 One of the strengths of distributed APIM solutions is the capability to cache seldomly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the cached results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
+
+## Operationalize the approach with APIOps
+
+Working with the converter and APIM UI is nice but doesn't scale to hundreds or thousands of APIs. For that you need to step up the approach to incorporate pipeline tooling and automation. We would recommend to have a look at [this reference about APIOps](https://docs.microsoft.com/azure/architecture/example-scenario/devops/automated-api-deployments-apiops) and [this CI/CD approach with templates](https://docs.microsoft.com/azure/api-management/devops-api-development-templates) to get started. Similar like we leveraged the nodejs files provided by OASIS for our web-converter, you could inject that into your pipeline to convert to openAPI spec on the fly.
