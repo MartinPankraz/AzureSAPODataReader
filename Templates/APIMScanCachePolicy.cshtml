@@ -9,12 +9,22 @@
         <cache-lookup-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshToken" />
         <cache-lookup-value key="@("SAPRefreshDuration" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" variable-name="SAPRefreshDuration" />
         <choose>
+            <!-- set value for response in case no bearer cached -->
             <when condition="@(!context.Variables.ContainsKey("SAPBearerToken"))">
                 <set-variable name="SAPBearerToken" value="bearer cache empty" />
                 <set-variable name="SAPBearerDuration" value="0" />
             </when>
+            <!-- handle chache removal in case bearer still present and header indicator active -->
+            <otherwise>
+                <choose>
+                    <when condition="@(context.Request.Headers.GetValueOrDefault("reset-cache","") == "true")">
+                        <cache-remove-value key="@("SAPPrincipal" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" caching-type="prefer-external" />
+                    </when>
+                </choose>
+            </otherwise>
         </choose>
         <choose>
+            <!-- set value for response in case no bearer duration cached -->
             <when condition="@(!context.Variables.ContainsKey("SAPBearerDuration"))">
                 <set-variable name="SAPBearerDuration" value="0" />
             </when>
@@ -24,8 +34,17 @@
                 <set-variable name="SAPRefreshToken" value="refresh token cache empty" />
                 <set-variable name="SAPRefreshDuration" value="0" />
             </when>
+            <!-- handle chache removal in case refresh token still present and header indicator active -->
+            <otherwise>
+                <choose>
+                    <when condition="@(context.Request.Headers.GetValueOrDefault("reset-cache","") == "true")">
+                        <cache-remove-value key="@("SAPPrincipalRefresh" + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Subject)" caching-type="prefer-external" />
+                    </when>
+                </choose>
+            </otherwise>
         </choose>
         <choose>
+            <!-- set value for response in case no refresh token duration cached -->
             <when condition="@(!context.Variables.ContainsKey("SAPRefreshDuration"))">
                 <set-variable name="SAPRefreshDuration" value="0" />
             </when>
@@ -33,13 +52,25 @@
     </inbound>
     <backend />
     <outbound>
-        <set-header name="Content-Type" exists-action="override">
-            <value>text/plain</value>
-        </set-header>
-        <set-body template="none">@{
-                return context.Variables["SAPBearerToken"] + " | " + context.Variables["SAPBearerDuration"] + "s | " +context.Variables["SAPRefreshToken"] + " | " + context.Variables["SAPRefreshDuration"] + "s";
-                //return "bearer:" + context.Variables["SAPBearerToken"] + " | refresh:" + context.Variables["SAPRefreshToken"];
-            }</set-body>
+        <choose>
+            <when condition="@(context.Request.Headers.GetValueOrDefault("reset-cache","") != "true")">
+                <set-header name="Content-Type" exists-action="override">
+                    <value>text/plain</value>
+                </set-header>
+                <set-body template="none">@{
+                        return context.Variables["SAPBearerToken"] + " | " + context.Variables["SAPBearerDuration"] + "s | " +context.Variables["SAPRefreshToken"] + " | " + context.Variables["SAPRefreshDuration"] + "s";
+                        //return "bearer:" + context.Variables["SAPBearerToken"] + " | refresh:" + context.Variables["SAPRefreshToken"];
+                    }</set-body>
+            </when>
+            <otherwise>
+                <set-header name="Content-Type" exists-action="override">
+                    <value>text/plain</value>
+                </set-header>
+                <set-body template="none">@{
+                        return "cache delete attempt for " + context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Claims.GetValueOrDefault("upn", "unknown") + " | "+ context.Variables["SAPBearerToken"] + " | "+ context.Variables["SAPRefreshToken"];
+                    }</set-body>
+            </otherwise>
+        </choose>
     </outbound>
     <on-error />
 </policies>
