@@ -41,7 +41,7 @@ In case your SAP backend uses a self-signed certificate you may need to consider
 
 SKIP steps 8-11 if you want to rely on client-side caching or implement SAP Principal Propagation at a later stage. We highly recommend using the APIM policy over the client-side approach though. See section `Authentication considerations` for more details.
 
-8. Add policy [SAPPrincipalPropagationAndCachingPolicy.cshtml](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) to your API base (All Operations -> Inbound Processing -> </>) on APIM and save.
+8. Add policy [SAPPrincipalPropagationAndCachingPolicy.cshtml](Templates/SAPPrincipalPropagationAndCachingPolicy.cshtml) to your API base (All Operations -> Inbound Processing -> `</>`) on APIM and save.
 9. Maintain your tenant specific params in [UpdateAPIMwithVariablesForSAPPolicy.sh](Templates/UpdateAPIMwithVariablesForSAPPolicy.sh) locally. The SAP policy relies on them for configuration of the SAP Principal Propagation.
 10. Open Azure Cloud Shell from the top menu in your Azure Portal and upload the bash script [UpdateAPIMwithVariablesForSAPPolicy.sh](Templates/UpdateAPIMwithVariablesForSAPPolicy.sh). If you know your way around Azure, of course you can use other means to execute the bash commands.
 11. Switch the Azure Cloud Shell environment to bash and run `bash UpdateAPIMwithVariablesForSAPPolicy.sh`
