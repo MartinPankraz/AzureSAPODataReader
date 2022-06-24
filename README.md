@@ -4,17 +4,24 @@ A dotnet 5 web project to showcase integration of Azure AD with Azure API Manage
 
 Find my associated blog post on the SAP Community [here](https://blogs.sap.com/2021/08/12/.net-speaks-odata-too-how-to-implement-azure-app-service-with-sap-odata-gateway/).
 
-As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service hosted on our S4 Lab environment.
+See our webcast for more details on the topic [here](https://www.youtube.com/watch?v=VMAHSn_QgXQ&t=750s).
+[![webcast teaser](/webcast-episode090.jpg)](https://www.youtube.com/watch?v=VMAHSn_QgXQ&t=750s)
 
-[Quick-Link](https://docs.microsoft.com/azure/api-management/sap-api) to official Microsoft docs for OData metadata import into Azure APIM.
+As an example for this project we used the `/sap/opu/odata/sap/epm_ref_apps_prod_man_srv` OData v2 service hosted on our S4 Lab environment. We can also recommend to use `sap/opu/odata/iwbep/GWSAMPLE_BASIC` to play with Updates, Patches and Deletes.
+
+🚀[Quick-Link](https://docs.microsoft.com/azure/api-management/sap-api) to official Microsoft docs for OData metadata import into Azure APIM.
 
 ![Overview Architecture](/overview-architecture.png)
 
-We assume you want to run the APIM instance centrally to expose SAP OData services to multiple interested parties. For a fully decoupled design we need to register each component individually with Azure AD. Our provided [APIM policy](https://github.com/Azure/api-management-policy-snippets/blob/master/examples/Request%20OAuth2%20access%20token%20from%20SAP%20using%20AAD%20JWT%20token.xml) takes care of the SAP Pricipal Propagation complexity. Consumer apps only need to provide the required scope and be allowed on AAD to authenticate against the middle tier app registration. We add the OData verb $format to force JSON output. Clients like Microsoft PowerPlatform work with JSON only. Consider dropping it from the policy in case you need XML as output format.
+We assume you want to run the APIM instance centrally to expose SAP OData services to multiple interested parties. For a fully decoupled design we need to register each component individually with Azure AD.
+
+Our officially provided [APIM policy](https://github.com/Azure/api-management-policy-snippets/blob/master/examples/Request%20OAuth2%20access%20token%20from%20SAP%20using%20AAD%20JWT%20token.xml)🧾 takes care of the SAP Pricipal Propagation complexity.
+
+Consumer apps only need to provide the required scope and be allowed on AAD to authenticate against the middle tier app registration. We add the OData verb $format to force JSON output. Clients like Microsoft PowerPlatform work with JSON only. Consider dropping it from the policy in case you need XML as output format.
 
 ![App Registration Overview](/AAD-App-Registration-overview.png)
 
-## Azure API Management Config
+## ⚙️Azure API Management Config
 
 In case you are running your APIM instance in a private VNet you need to configure certain [network security group rules](https://docs.microsoft.com/azure/api-management/api-management-using-with-vnet?tabs=stv2#network-configuration) on your subnet, so it can reach the required Azure PaaS services.
 
@@ -41,7 +48,7 @@ SKIP steps 8-11 if you want to rely on client-side caching or implement SAP Prin
 
 Find more policy snippets and expression cheatsheets on our [Azure Examples Repos](http://aka.ms/apimpolicyexamples).
 
-## .NET Frontend Project setup
+## 🛠️.NET Frontend Project setup
 
 For you convenience I left the appsettings as templates on the Templates folder. Just move them to your root as you see fit and start configuring. Depending on your caching choice you will need to drop parts of the client-side config.
 
@@ -49,7 +56,7 @@ In addition to that there is a Postman collection with the relevant calls to che
 
 Find your initial APIM subscription key under APIs -> Subscriptions -> Built-in all-access subscription -> ... -> Show Primary Key
 
-## Authentication considerations
+## 🔐 Authentication considerations
 
 ### Client-side vs. APIM caching for SAP Principal Propagation
 
@@ -75,11 +82,15 @@ SAP OData services are protected by CSRF tokens usually.
 
 For further reading on csrf-token handling for SAP with APIM policy, have a look at this [template](Templates/SAPXCSRFTokenPolicy.cshtml) on our repos.
 
-## If-Match header and ETags
+### Client logout and cache purge
+
+If you are using APIM to deal with your tokens, you should consider implementing a logout endpoint that purges the tokens for an individual client from the cache. See the [Microsoft docs](https://docs.microsoft.com/azure/api-management/api-management-caching-policies#RemoveCacheByKey) for cache maintenance for more details.
+
+## 🔬If-Match header and ETags
 
 Be aware that some OData operations like PATCH require the [If-Match header](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-odata/c3569037-0557-4769-8f75-a91ffcd7b05b) containing your [ETag](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-odata/c4d715eb-10f6-47fa-9ccc-2ebf926558a6) value to ensure concurrent operations are executed in anticipated order. The provided APIM policy does not cover that by design. Your client needs to feed the ETag and If-Match header accordingly.
 
-## Troubleshooting hints
+## 🩺Troubleshooting hints
 
 - Verify generated OpenAPI spec with [swagger.io](https://editor.swagger.io/) if you have APIM import issues. For instance, we ran into issues with non-unique names for cross OData service references with the TripPinRESTTierService example service for v4 provided by [service.odata.org](https://services.odata.org/TripPinRESTierService/$metadata).
 - Leverage [Postman collection](Templates/AAD_APIM_SAP_Principal_Propagation.postman_collection.json) to check each step and see meaningful error message outputs
@@ -90,10 +101,14 @@ Be aware that some OData operations like PATCH require the [If-Match header](htt
 - Create a diagnostic endpoint to read your APIM cache to check on the tokens by user. Have a look at our [template](Templates/APIMScanCachePolicy.cshtml) to get started. It contains logic to clean your cache too in case you "messed" it up ;-). The foundation for it is the Authorization header and bearer token as well as a special header "reset-cache" to initiate delete. You cannot purge the whole cash at once. It has to happen on user by user basis.
 - The SAP Refresh token is valid only once! If you use it from Postman but still have it cached in your APIM instance, your cache is broken. Consider overriding or make a "fresh" oauth call.
 
-## Thoughts on OData result caching in APIM
+## 🗃️Thoughts on OData result caching in APIM
 
 One of the strengths of distributed APIM solutions is the capability to cache seldomly changing result sets and serve them from APIM directly instead of the backend. Regarding SAP Principal Propagation this is problematic, because user authorizations are no longer evaluated on the cached results. You would need to add logic to the APIM layer to either request permissions from SAP before returning the cache or also cache the permissions for a limited time. This is aspect is not implemented in the provided app.
 
-## Operationalize the approach with APIOps
+## 🧑🏾‍💻Operationalize the approach with APIOps
 
 Working with the converter and APIM UI is nice but doesn't scale to hundreds or thousands of APIs. For that you need to step up the approach to incorporate pipeline tooling and automation. We would recommend to have a look at [this reference about APIOps](https://docs.microsoft.com/azure/architecture/example-scenario/devops/automated-api-deployments-apiops) and [this CI/CD approach with templates](https://docs.microsoft.com/azure/api-management/devops-api-development-templates) to get started. Similar like we leveraged the nodejs files provided by OASIS for our web-converter, you could inject that into your pipeline to convert to openAPI spec on the fly.
+
+## 🙋🏾Contribute
+
+Feel free to post an issue or pull request to our GitHub repo. Other than that, we love to hear from you via LinkedIn or Twitter.
