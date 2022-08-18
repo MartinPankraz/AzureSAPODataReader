@@ -1,0 +1,66 @@
+<policies>
+    <inbound>
+        <base />
+        <choose>
+            <!-- if empty Bearer assume Microsoft Excel signin request as described here: https://docs.microsoft.com/power-query/connectorauthentication#supported-workflow -->
+            <when condition="@(context.Request.Headers.GetValueOrDefault("Authorization","").Trim().Equals("Bearer"))">
+                <return-response>
+                    <set-status code="401" reason="Unauthorized" />
+                    <set-header name="WWW-Authenticate" exists-action="override">
+                        <!-- Uses standard client id for PowerQuery. Please check latest state on relevant docs entry: https://docs.microsoft.com/power-query/connectorauthentication#supported-workflow --> 
+                        <value>Bearer authorization_uri=https://login.microsoftonline.com/{{AADTenantId}}/oauth2/authorize?response_type=code%26client_id=a672d62c-fc7b-4e81-a576-e60dc46e951d</value>
+                    </set-header>
+                </return-response>
+            </when>
+            <otherwise>
+                <validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer">
+                    <openid-config url="https://login.microsoftonline.com/{{AADTenantId}}/.well-known/openid-configuration" />
+                    <audiences>
+                        <!-- adjust API URI for custom domains if required. Excel requires APIM to be AAD registered and custom domain verified for Organizationl Accoun login procedure! -->
+                        <audience>https://your.custom-domain.com</audience>
+                    </audiences>
+                    <issuers>
+                        <issuer>https://sts.windows.net/{{AADTenantId}}/</issuer>
+                    </issuers>
+                    <required-claims>
+                        <claim name="scp" match="all" separator=" ">
+                            <value>user_impersonation</value>
+                        </claim>
+                    </required-claims>
+                </validate-jwt>
+            </otherwise>
+        </choose>
+      </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+    </outbound>
+    <on-error>
+        <base />
+        <set-header name="ErrorSource" exists-action="override">
+            <value>@(context.LastError.Source)</value>
+        </set-header>
+        <set-header name="ErrorReason" exists-action="override">
+            <value>@(context.LastError.Reason)</value>
+        </set-header>
+        <set-header name="ErrorMessage" exists-action="override">
+            <value>@(context.LastError.Message)</value>
+        </set-header>
+        <set-header name="ErrorScope" exists-action="override">
+            <value>@(context.LastError.Scope)</value>
+        </set-header>
+        <set-header name="ErrorSection" exists-action="override">
+            <value>@(context.LastError.Section)</value>
+        </set-header>
+        <set-header name="ErrorPath" exists-action="override">
+            <value>@(context.LastError.Path)</value>
+        </set-header>
+        <set-header name="ErrorPolicyId" exists-action="override">
+            <value>@(context.LastError.PolicyId)</value>
+        </set-header>
+        <set-header name="ErrorStatusCode" exists-action="override">
+            <value>@(context.Response.StatusCode.ToString())</value>
+        </set-header>
+    </on-error>
+</policies>
