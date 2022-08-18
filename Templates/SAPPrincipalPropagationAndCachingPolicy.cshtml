@@ -210,7 +210,7 @@
              https://demo-sap-apim.azure-api.net:443/my-prefix/BusinessPartnerSet('0100000000')/ToSalesOrders
         -->
         <choose>
-            <!-- URL rewrite in body only required for GET -->
+            <!-- URL rewrite in body only required for GET. Check the Azure APIM docs for details on the configuration: https://docs.microsoft.com/azure/api-management/api-management-policy-expressions -->
             <when condition="@(context.Request.Method == "GET")">
                 <find-and-replace from="@(context.Api.ServiceUrl.Host +":"+ context.Api.ServiceUrl.Port + context.Api.ServiceUrl.Path)" to="@(context.Request.OriginalUrl.Host + ":" + context.Request.OriginalUrl.Port + context.Api.Path)" />
             </when>
