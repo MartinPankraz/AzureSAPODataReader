@@ -4,7 +4,7 @@ A dotnet 5 web project to showcase integration of Azure AD with Azure API Manage
 
 Find my associated blog posts on the SAP Community [here](https://blogs.sap.com/2021/08/12/.net-speaks-odata-too-how-to-implement-azure-app-service-with-sap-odata-gateway/) and [here](https://blogs.sap.com/2022/03/17/open-your-sap-odata-apis-for-some-swagger-or-how-to-make-friends-with-the-other-kids-from-the-api-block/).
 
-> **Note** - See [this repos](https://github.com/Azure-Samples/app-service-javascript-sap-cloud-sdk-quickstart) to learn more about using the SAP Cloud SDK with Azure and app release with a single command.
+> **Important** - See [this official sample repos](https://github.com/Azure-Samples/app-service-javascript-sap-cloud-sdk-quickstart) to learn more about using the SAP Cloud SDK with Azure. Thanks to the Azure Developer CLI everything is up and running with a singel command😎.
 
 See our webcast for more details on the topic [here](https://www.youtube.com/watch?v=VMAHSn_QgXQ&t=750s).
 [![webcast teaser](/webcast-episode090.jpg)](https://www.youtube.com/watch?v=VMAHSn_QgXQ&t=750s)
