@@ -1,0 +1,659 @@
+{
+	"info": {
+		"_postman_id": "392883c0-c5d2-4dcd-a9f8-f2d2dec31717",
+		"name": "SuccessFactors Entra ID principal propagation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "8114323"
+	},
+	"item": [
+		{
+			"name": "Web App Login to obtain Access Token from Entra ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{Entra ID tenant}}/oauth2/v2.0/authorize?client_id={{Frontend App Client Id}}&response_type=token&redirect_uri=https://localhost:44326/signin-oidc&scope=openid profile {{App ID URI scope}}&response_mode=fragment",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{Entra ID tenant}}",
+						"oauth2",
+						"v2.0",
+						"authorize"
+					],
+					"query": [
+						{
+							"key": "client_id",
+							"value": "{{Frontend App Client Id}}"
+						},
+						{
+							"key": "response_type",
+							"value": "token"
+						},
+						{
+							"key": "redirect_uri",
+							"value": "https://localhost:44326/signin-oidc"
+						},
+						{
+							"key": "scope",
+							"value": "openid profile {{App ID URI scope}}",
+							"description": "Scope for API Management app for requesting FrontEnd app (shared component)"
+						},
+						{
+							"key": "response_mode",
+							"value": "fragment"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Request SAML assertion from Entra ID with ObO flow v2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    if (pm.environment.get(\"Web App Client ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *Web App Client ID* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"Web App Client Secret\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *Web App Client Secret* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"AAD tenant ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *AAD tenant ID* environment variable first.\");\r",
+							"    }\r",
+							"    else\r",
+							"    {\r",
+							"        var json = JSON.parse(responseBody);\r",
+							"        pm.environment.set(\"bearerToken\", json.access_token);\r",
+							"    }\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+							"type": "text"
+						},
+						{
+							"key": "assertion",
+							"value": "",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{APIM middle tier client ID}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{APIM middle tier client secret}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "https://{{Entra App registration resource}}/.default",
+							"type": "text"
+						},
+						{
+							"key": "requested_token_use",
+							"value": "on_behalf_of",
+							"type": "text"
+						},
+						{
+							"key": "requested_token_type",
+							"value": "urn:ietf:params:oauth:token-type:saml2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{Entra ID tenant}}/oauth2/v2.0/token",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{Entra ID tenant}}",
+						"oauth2",
+						"v2.0",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Request access token from SuccessFactors with SAML Bearer Grant Type (RFC 7522)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    if (pm.environment.get(\"SAP OAuth Client ID\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *SAP OAuth Client ID* environment variable first.\");\r",
+							"    }\r",
+							"    if (pm.environment.get(\"SAP OAuth Scope\") === \"\")\r",
+							"    {\r",
+							"        console.log(\"You need to enter *SAP OAuth Scope* environment variable first.\");\r",
+							"    }\r",
+							"    else\r",
+							"    {\r",
+							"        var json = JSON.parse(responseBody);\r",
+							"        pm.environment.set(\"SAPBearerToken\", json.access_token);\r",
+							"        pm.environment.set(\"refreshToken\", json.refresh_token);\r",
+							"    }\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "urn:ietf:params:oauth:grant-type:saml2-bearer",
+							"type": "text"
+						},
+						{
+							"key": "assertion",
+							"value": "{{bearerToken}}",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{SAP SF API Key}}",
+							"type": "text"
+						},
+						{
+							"key": "company_id",
+							"value": "{{SF CompanyId}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "test",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "https://{{SF auth endpoint}}/oauth/token",
+					"protocol": "https",
+					"host": [
+						"{{SF auth endpoint}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Call SF OData service metadata",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    pm.environment.set(\"ETag\", pm.response.headers.get(\"ETag\"));\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "your-user@your-company-id",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"disabled": true
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://{{SF OData API endpoint}}/odata/v2/User/$metadata",
+					"protocol": "https",
+					"host": [
+						"{{SF OData API endpoint}}"
+					],
+					"path": [
+						"odata",
+						"v2",
+						"User",
+						"$metadata"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Call SF OData User service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"try {\r",
+							"    pm.environment.set(\"ETag\", pm.response.headers.get(\"ETag\"));\r",
+							"}\r",
+							"catch (e) {\r",
+							"    console.log(e);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "your-user@your-company-id",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"disabled": true
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"disabled": true
+					},
+					{
+						"key": "X-CSRF-Token",
+						"value": "Fetch",
+						"type": "text"
+					},
+					{
+						"key": "If-Match",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{SF OData API endpoint}}/odata/v2/User('1')?$format=json&$select=country,lastName,userId,status",
+					"protocol": "https",
+					"host": [
+						"{{SF OData API endpoint}}"
+					],
+					"path": [
+						"odata",
+						"v2",
+						"User('1')"
+					],
+					"query": [
+						{
+							"key": "$format",
+							"value": "json"
+						},
+						{
+							"key": "$select",
+							"value": "country,lastName,userId,status"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update SF OData User service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "your-user@your-company-id",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"disabled": true
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"disabled": true
+					},
+					{
+						"key": "X-CSRF-Token",
+						"value": "Fetch",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"userId\":\"1\",\r\n    \"lastName\":\"Trombley\",\r\n    \"country\":\"France\",\r\n    \"status\":\"t\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{SF OData API endpoint}}/odata/v2/User('1')",
+					"protocol": "https",
+					"host": [
+						"{{SF OData API endpoint}}"
+					],
+					"path": [
+						"odata",
+						"v2",
+						"User('1')"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get SF Users list via APIM",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "your-user@your-company-id",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{APIM-domain}}/sf/User?$top=3&$select=country,lastName,userId,status",
+					"protocol": "https",
+					"host": [
+						"{{APIM-domain}}"
+					],
+					"path": [
+						"sf",
+						"User"
+					],
+					"query": [
+						{
+							"key": "$top",
+							"value": "3"
+						},
+						{
+							"key": "$select",
+							"value": "country,lastName,userId,status"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get SF single User via APIM",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://{{APIM-domain}}/sf/User('1')?$select=country,lastName,userId,status",
+					"protocol": "https",
+					"host": [
+						"{{APIM-domain}}"
+					],
+					"path": [
+						"sf",
+						"User('1')"
+					],
+					"query": [
+						{
+							"key": "$select",
+							"value": "country,lastName,userId,status"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update SF OData User service via APIM",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{Ocp-Apim-Subscription-Key}}",
+						"disabled": true
+					},
+					{
+						"key": "Ocp-Apim-Trace",
+						"value": "true",
+						"disabled": true
+					},
+					{
+						"key": "X-CSRF-Token",
+						"value": "Fetch",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"userId\":\"1\",\r\n    \"lastName\":\"Trombley1\",\r\n    \"country\":\"France\",\r\n    \"status\":\"t\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{APIM-domain}}/sf/User('1')",
+					"protocol": "https",
+					"host": [
+						"{{APIM-domain}}"
+					],
+					"path": [
+						"sf",
+						"User('1')"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "sf-api-domain",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
